@@ -138,7 +138,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      user_can_access_document: {
+        Args: { doc_id: string; user_id: string }
+        Returns: boolean
+      }
+      user_owns_document: {
+        Args: { doc_id: string; user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
