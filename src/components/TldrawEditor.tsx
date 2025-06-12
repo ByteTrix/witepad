@@ -1,5 +1,5 @@
 
-import { Tldraw, createTLStore, defaultShapeUtils, defaultTools, TLStore } from 'tldraw'
+import { Tldraw, createTLStore, defaultShapeUtils, defaultTools, TLStore, StoreSnapshot, TLRecord } from 'tldraw'
 import 'tldraw/tldraw.css'
 import { useEffect, useState, useMemo } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -56,7 +56,9 @@ export const TldrawEditor = ({ documentId }: TldrawEditorProps) => {
         if (doc) {
           setCurrentDocId(doc.id)
           if (doc.data && Object.keys(doc.data).length > 0) {
-            store.loadSnapshot(doc.data)
+            // Properly type-cast the document data to StoreSnapshot
+            const snapshot = doc.data as StoreSnapshot<TLRecord>
+            store.loadSnapshot(snapshot)
           }
         }
       } else {
@@ -118,17 +120,19 @@ export const TldrawEditor = ({ documentId }: TldrawEditorProps) => {
         className="tldraw-custom"
       />
       
-      <style jsx>{`
-        .tldraw-custom .tlui-menu-zone {
-          display: none !important;
-        }
-        .tldraw-custom .tlui-help-menu {
-          display: none !important;
-        }
-        .tldraw-custom .tlui-navigation-zone {
-          bottom: 20px !important;
-        }
-      `}</style>
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          .tldraw-custom .tlui-menu-zone {
+            display: none !important;
+          }
+          .tldraw-custom .tlui-help-menu {
+            display: none !important;
+          }
+          .tldraw-custom .tlui-navigation-zone {
+            bottom: 20px !important;
+          }
+        `
+      }} />
     </div>
   )
 }
