@@ -1,73 +1,169 @@
-# Welcome to your Lovable project
 
-## Project info
+# DrawBoard - Collaborative Drawing Platform
 
-**URL**: https://lovable.dev/projects/bcc4e3a7-4273-4eb5-a84b-fdca94d37612
+A modern, collaborative drawing platform built with React, TypeScript, Tldraw, and Supabase. Create, collaborate, and share your drawings in real-time.
 
-## How can I edit this code?
+## Features
 
-There are several ways of editing your application.
+- 🎨 **Advanced Drawing Tools** - Professional drawing capabilities powered by Tldraw
+- 👥 **Real-time Collaboration** - Work together with others in real-time
+- ☁️ **Cloud Storage** - Automatic saving and synchronization across devices
+- 🔐 **User Authentication** - Secure user accounts and document ownership
+- 📱 **Responsive Design** - Works perfectly on desktop and mobile
+- 🚀 **Fast & Modern** - Built with the latest web technologies
 
-**Use Lovable**
+## Tech Stack
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/bcc4e3a7-4273-4eb5-a84b-fdca94d37612) and start prompting.
+- **Frontend**: React 18, TypeScript, Tailwind CSS
+- **Drawing Engine**: Tldraw v3
+- **Backend**: Supabase (Auth, Database, Realtime, Storage)
+- **Deployment**: Render (Frontend) + Supabase (Backend)
 
-Changes made via Lovable will be committed automatically to this repo.
+## Quick Start
 
-**Use your preferred IDE**
+### Prerequisites
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- Node.js 18+ 
+- npm or yarn
+- Supabase account (free tier available)
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Local Development
 
-Follow these steps:
+1. **Clone the repository**
+   ```bash
+   git clone <your-repo-url>
+   cd drawboard
+   ```
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+3. **Set up Supabase**
+   - Create a new Supabase project at [supabase.com](https://supabase.com)
+   - Copy your project URL and anon key
+   - Update `src/integrations/supabase/client.ts` with your credentials
 
-# Step 3: Install the necessary dependencies.
-npm i
+4. **Set up the database**
+   - In your Supabase dashboard, go to the SQL editor
+   - Run the SQL from `schema.sql` file
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+5. **Start development server**
+   ```bash
+   npm run dev
+   ```
+
+6. **Open your browser**
+   - Navigate to `http://localhost:5173`
+
+## Deployment
+
+### Deploy to Render (Free)
+
+1. **Frontend Deployment**
+   - Fork this repository to your GitHub account
+   - Create a new Static Site on Render
+   - Connect your GitHub repository
+   - Set build command: `npm run build`
+   - Set publish directory: `dist`
+
+2. **Environment Variables**
+   - No environment variables needed (credentials are in the code for simplicity)
+
+3. **Custom Domain** (Optional)
+   - Add your custom domain in Render dashboard
+   - Update Supabase Auth settings with your domain
+
+### Self-Hosting
+
+For self-hosting, you can use:
+
+1. **Supabase Self-Hosted** - Follow [Supabase self-hosting guide](https://supabase.com/docs/guides/self-hosting)
+2. **Any Static Host** - Deploy the built files to any static hosting service
+3. **Docker** - Build a Docker image for containerized deployment
+
+## Configuration
+
+### Supabase Setup
+
+1. **Authentication**
+   - Enable Email/Password authentication
+   - Configure redirect URLs in Auth settings
+   - Optional: Enable social providers (Google, GitHub, etc.)
+
+2. **Database**
+   - Run the provided `schema.sql` file
+   - Enable Row Level Security (RLS)
+   - Set up realtime subscriptions
+
+3. **Storage**
+   - Create `documents` bucket
+   - Configure storage policies
+
+### Environment Variables
+
+For production deployments, you may want to use environment variables:
+
+```env
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
-**Edit a file directly in GitHub**
+## Features in Detail
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Real-time Collaboration
+- Multiple users can draw on the same canvas simultaneously
+- Changes are synchronized in real-time using Supabase Realtime
+- Conflict resolution ensures smooth collaboration
 
-**Use GitHub Codespaces**
+### Document Management
+- Create, save, and organize drawings
+- Share documents with other users
+- Version history and auto-save functionality
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### Advanced Drawing Tools
+- Shape tools (rectangle, circle, line, arrow, etc.)
+- Text editing with rich formatting
+- Layer management and grouping
+- Export to various formats (PNG, SVG, JSON)
 
-## What technologies are used for this project?
+### User Management
+- Secure authentication with Supabase Auth
+- User profiles and preferences
+- Document ownership and permissions
 
-This project is built with:
+## Free Tier Limits
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+This application is designed to work within free tier limits:
 
-## How can I deploy this project?
+- **Supabase**: 500MB database, 1GB bandwidth, 2 realtime connections
+- **Render**: 750 hours/month static site hosting
+- **Total Cost**: $0/month for small to medium usage
 
-Simply open [Lovable](https://lovable.dev/projects/bcc4e3a7-4273-4eb5-a84b-fdca94d37612) and click on Share -> Publish.
+## Contributing
 
-## Can I connect a custom domain to my Lovable project?
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
 
-Yes, you can!
+## License
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+MIT License - see LICENSE file for details
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+## Support
+
+For questions or issues:
+- Open a GitHub issue
+- Check the [Supabase documentation](https://supabase.com/docs)
+- Check the [Tldraw documentation](https://tldraw.dev/docs)
+
+## Roadmap
+
+- [ ] Export/Import functionality
+- [ ] Advanced collaboration features
+- [ ] Mobile app
+- [ ] Plugin system
+- [ ] Advanced shape libraries
+- [ ] Team workspaces

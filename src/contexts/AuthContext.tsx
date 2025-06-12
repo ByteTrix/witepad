@@ -1,17 +1,15 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react'
-
-interface User {
-  id: string
-  email: string
-  name?: string
-}
+import { supabase } from '@/integrations/supabase/client'
+import { User, Session } from '@supabase/supabase-js'
+import { toast } from '@/components/ui/use-toast'
 
 interface AuthContextType {
   user: User | null
+  session: Session | null
   isLoading: boolean
-  signIn: (email: string, password: string) => Promise<void>
-  signUp: (email: string, password: string) => Promise<void>
+  signIn: (email: string, password: string) => Promise<{ error?: string }>
+  signUp: (email: string, password: string, fullName?: string) => Promise<{ error?: string }>
   signOut: () => Promise<void>
 }
 
@@ -27,35 +25,107 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null)
+  const [session, setSession] = useState<Session | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // Mock authentication check - will be replaced with Supabase
-    const checkAuth = async () => {
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.email)
+        setSession(session)
+        setUser(session?.user ?? null)
+        setIsLoading(false)
+      }
+    )
+
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+      setUser(session?.user ?? null)
       setIsLoading(false)
-    }
-    checkAuth()
+    })
+
+    return () => subscription.unsubscribe()
   }, [])
 
   const signIn = async (email: string, password: string) => {
-    // Mock sign in - will be replaced with Supabase
-    console.log('Signing in:', email)
-    setUser({ id: '1', email })
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+      
+      if (error) {
+        console.error('Sign in error:', error.message)
+        return { error: error.message }
+      }
+      
+      toast({
+        title: "Welcome back!",
+        description: "You have successfully signed in.",
+      })
+      
+      return {}
+    } catch (error: any) {
+      console.error('Sign in error:', error)
+      return { error: error.message || 'An error occurred during sign in' }
+    }
   }
 
-  const signUp = async (email: string, password: string) => {
-    // Mock sign up - will be replaced with Supabase
-    console.log('Signing up:', email)
-    setUser({ id: '1', email })
+  const signUp = async (email: string, password: string, fullName?: string) => {
+    try {
+      const redirectUrl = `${window.location.origin}/`
+      
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            full_name: fullName || '',
+          }
+        }
+      })
+      
+      if (error) {
+        console.error('Sign up error:', error.message)
+        return { error: error.message }
+      }
+      
+      toast({
+        title: "Account created!",
+        description: "Please check your email to verify your account.",
+      })
+      
+      return {}
+    } catch (error: any) {
+      console.error('Sign up error:', error)
+      return { error: error.message || 'An error occurred during sign up' }
+    }
   }
 
   const signOut = async () => {
-    setUser(null)
+    try {
+      await supabase.auth.signOut()
+      toast({
+        title: "Signed out",
+        description: "You have been successfully signed out.",
+      })
+    } catch (error: any) {
+      console.error('Sign out error:', error)
+      toast({
+        title: "Error",
+        description: "An error occurred during sign out.",
+        variant: "destructive"
+      })
+    }
   }
 
   return (
     <AuthContext.Provider value={{
       user,
+      session,
       isLoading,
       signIn,
       signUp,
