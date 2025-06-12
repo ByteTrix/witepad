@@ -55,10 +55,17 @@ export const TldrawEditor = ({ documentId }: TldrawEditorProps) => {
         const doc = await loadDocument(documentId)
         if (doc) {
           setCurrentDocId(doc.id)
-          if (doc.data && Object.keys(doc.data).length > 0) {
-            // Properly type-cast the document data to StoreSnapshot
-            const snapshot = doc.data as StoreSnapshot<TLRecord>
-            store.loadSnapshot(snapshot)
+          if (doc.data && typeof doc.data === 'object' && doc.data !== null && !Array.isArray(doc.data)) {
+            try {
+              // Properly type-cast the document data to StoreSnapshot
+              const snapshot = doc.data as unknown as StoreSnapshot<TLRecord>
+              // Validate that it has the required structure before loading
+              if (snapshot && typeof snapshot === 'object' && 'store' in snapshot) {
+                store.loadSnapshot(snapshot)
+              }
+            } catch (error) {
+              console.error('Failed to load document snapshot:', error)
+            }
           }
         }
       } else {
