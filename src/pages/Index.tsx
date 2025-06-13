@@ -1,4 +1,3 @@
-
 import { TldrawEditor } from '@/components/TldrawEditor'
 import { Header } from '@/components/Header'
 import { useAuth } from '@/contexts/AuthContext'
@@ -6,10 +5,14 @@ import { AuthDialog } from '@/components/AuthDialog'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Palette, Zap, Users, Cloud } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { useDocuments } from '@/hooks/useDocuments'
 
 const Index = () => {
   const { user, isLoading } = useAuth()
   const [authDialogOpen, setAuthDialogOpen] = useState(false)
+  const navigate = useNavigate();
+  const { createDocument } = useDocuments()
 
   if (isLoading) {
     return (
@@ -96,12 +99,41 @@ const Index = () => {
       </div>
     )
   }
-
   return (
     <div className="min-h-screen w-full bg-background">
       <Header />
       <div className="pt-16 h-screen">
-        <TldrawEditor />
+        <div className="container mx-auto p-6">
+          <div className="flex flex-col items-center justify-center gap-8 pt-12">
+            <h1 className="text-3xl font-bold text-center">Welcome to DrawBoard</h1>
+            <p className="text-center text-muted-foreground max-w-2xl">
+              Create and collaborate on beautiful diagrams and sketches
+            </p>
+            <div className="flex gap-4">
+              <Button 
+                size="lg"
+                onClick={() => navigate('/documents')}
+              >
+                My Documents
+              </Button>
+              <Button 
+                size="lg"
+                variant="outline"
+                onClick={() => {
+                  const createAndNavigate = async () => {
+                    const doc = await createDocument('Untitled Drawing')
+                    if (doc) {
+                      navigate(`/editor/${doc.id}`)
+                    }
+                  }
+                  createAndNavigate()
+                }}
+              >
+                New Document
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )

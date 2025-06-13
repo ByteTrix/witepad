@@ -100,4 +100,10 @@
   body {
     @apply bg-background text-foreground;
   }
+  
+  /* Disable animations when the user prefers */
+  .disable-animations * {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
+  }
 }

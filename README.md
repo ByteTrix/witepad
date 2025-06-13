@@ -1,5 +1,5 @@
 
-# DrawBoard - Collaborative Drawing Platform
+# Witepad - Collaborative Drawing Platform
 
 A modern, collaborative drawing platform built with React, TypeScript, Tldraw, and Supabase. Create, collaborate, and share your drawings in real-time.
 
