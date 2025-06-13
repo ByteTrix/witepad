@@ -1,3 +1,4 @@
+
 // offline-db.ts
 // Simple IndexedDB wrapper for offline-first document and image storage
 import { openDB, DBSchema } from 'idb';
@@ -31,6 +32,11 @@ interface WitepadDB extends DBSchema {
   documents: {
     key: string;
     value: WitepadDoc;
+    indexes: { 
+      'by-owner': string; 
+      'by-favorite': [string, boolean]; 
+      'by-date': string; 
+    };
   };
   images: {
     key: string;
@@ -39,6 +45,10 @@ interface WitepadDB extends DBSchema {
   assets: {
     key: string;
     value: WitepadAsset;
+    indexes: { 
+      'by-owner': string; 
+      'by-type': string; 
+    };
   };
   assetData: {
     key: string;
