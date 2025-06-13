@@ -1,4 +1,3 @@
-
 // offline-db.ts
 // Simple IndexedDB wrapper for offline-first document and image storage
 import { openDB, DBSchema } from 'idb';
