@@ -35,8 +35,9 @@ export const SimpleEditor = ({ documentId }: SimpleEditorProps) => {
   if (!sync || !sync.store) return null
 
   return (
-    <div style={{ position: 'fixed', inset: 0 }}>
+    <div className='h-screen w-full flex flex-col bg-background relative overflow-hidden'>
       <Tldraw store={sync.store} />
+      
     </div>
   )
 }
