@@ -1,7 +1,7 @@
 
 import { useEffect } from 'react'
 import { useParams } from 'react-router-dom'
-import { TldrawEditor } from '@/components/TldrawEditor'
+import { SimpleEditor } from '@/components/SimpleEditor'
 import { useAuth } from '@/contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
 
@@ -18,11 +18,7 @@ const Editor = () => {
 
   if (!user) return null
 
-  return (
-    <div className="h-screen w-full">
-      <TldrawEditor documentId={documentId} />
-    </div>
-  )
+  return <SimpleEditor documentId={documentId} />
 }
 
 export default Editor
