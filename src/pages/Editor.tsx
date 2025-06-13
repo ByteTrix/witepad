@@ -1,9 +1,9 @@
-
 import { useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { SimpleEditor } from '@/components/SimpleEditor'
 import { useAuth } from '@/contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
+import { Header } from '@/components/Header'
 
 const Editor = () => {
   const { documentId } = useParams()
@@ -18,7 +18,14 @@ const Editor = () => {
 
   if (!user) return null
 
-  return <SimpleEditor documentId={documentId} />
+  return (
+    <div className="h-screen w-full bg-background">
+      <Header flat />
+      <div className="flex-1">
+        <SimpleEditor documentId={documentId} />
+      </div>
+    </div>
+  )
 }
 
 export default Editor
