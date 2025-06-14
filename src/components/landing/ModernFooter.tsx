@@ -67,7 +67,7 @@ export const ModernFooter = () => {
             <div className="space-y-6">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg shadow-orange-400/25 overflow-hidden">
-                  <img src="/lovable-uploads/6b26b4c3-b0a0-4b86-aee7-2b9b6a3f1b92.png" alt="Witepad Logo" className="w-full h-full object-cover" />
+                  <img src="/placeholder.svg" alt="Witepad Logo" className="w-full h-full object-cover" />
                 </div>
                 <span className="text-2xl font-bold bg-gradient-to-r from-orange-400 to-orange-300 bg-clip-text text-transparent">
                   Witepad

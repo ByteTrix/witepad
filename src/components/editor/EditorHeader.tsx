@@ -81,7 +81,7 @@ export const TopPanel = () => {
             ? '0 0 0 2px rgba(16, 185, 129, 0.2)' 
             : '0 0 0 2px rgba(245, 158, 11, 0.2)',
           animation: isOnline ? 'pulse 2s infinite' : 'none'
-        }} />        {isOnline ? 'Connected' : 'Offline'}
+        }} />        {isOnline ? 'Online' : 'Offline'}
       </div>
     </div>
     </>

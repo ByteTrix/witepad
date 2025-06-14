@@ -34,7 +34,7 @@ export const Header = ({
         {/* Logo/brand */}
         <div className="flex items-center gap-2 cursor-pointer group" onClick={() => navigate('/')}>
           <div className="w-8 h-8 rounded-lg flex items-center justify-center shadow-lg hover:scale-110 hover:rotate-6 transition-transform overflow-hidden">
-            <img alt="Witepad Logo" className="w-full h-full object-contain" src="/lovable-uploads/59fcbac7-1227-4191-92a6-2eb429a470ac.png" />
+            <img alt="Witepad Logo" className="w-full h-full object-contain" src="/placeholder.svg" />
           </div>
           <span className="text-lg font-bold bg-gradient-to-r from-orange-400 via-white to-orange-400 bg-clip-text text-transparent tracking-tight select-none">
             Witepad
