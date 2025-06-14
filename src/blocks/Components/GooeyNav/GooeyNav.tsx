@@ -1,3 +1,4 @@
+
 /*
 	Installed from https://reactbits.dev/ts/tailwind/
 */
@@ -200,13 +201,13 @@ const GooeyNav: React.FC<GooeyNavProps> = ({
             position: absolute;
             inset: -75px;
             z-index: -2;
-            background: black;
+            background: transparent;
           }
           .effect.filter::after {
             content: "";
             position: absolute;
             inset: 0;
-            background: white;
+            background: linear-gradient(90deg, #22d3ee 0%, #a855f7 100%);
             transform: scale(0);
             opacity: 0;
             z-index: -1;
@@ -292,7 +293,6 @@ const GooeyNav: React.FC<GooeyNavProps> = ({
             color: black;
             text-shadow: none;
           }
-          /* Revamped active nav style: No black background/border */
           li.active::after {
             opacity: 1;
             transform: scale(1);
@@ -301,7 +301,6 @@ const GooeyNav: React.FC<GooeyNavProps> = ({
             border-radius: 16px;
             border: none;
           }
-          /* Remove background/border from default state too */
           li::after {
             content: "";
             position: absolute;

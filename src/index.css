@@ -64,6 +64,47 @@
     @apply bg-background text-foreground;
     font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1;
+    position: relative;
+  }
+
+  /* Global noise effect overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: 
+      radial-gradient(circle at 1px 1px, rgba(255,255,255,0.15) 1px, transparent 0);
+    background-size: 20px 20px;
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0.4;
+    animation: noise 8s infinite linear;
+  }
+
+  @keyframes noise {
+    0% { 
+      transform: translate(0, 0); 
+      opacity: 0.4;
+    }
+    25% { 
+      transform: translate(-5%, 5%); 
+      opacity: 0.3;
+    }
+    50% { 
+      transform: translate(-10%, 10%); 
+      opacity: 0.4;
+    }
+    75% { 
+      transform: translate(-5%, 15%); 
+      opacity: 0.3;
+    }
+    100% { 
+      transform: translate(0, 20%); 
+      opacity: 0.4;
+    }
   }
   
   /* Disable animations when the user prefers */
@@ -183,7 +224,7 @@
   position: absolute;
   inset: -75px;
   z-index: -2;
-  background: black;
+  background: transparent;
 }
 
 .effect.filter::after {
