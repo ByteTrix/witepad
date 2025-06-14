@@ -2,39 +2,7 @@
 import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { ArrowRight } from 'lucide-react'
-
-/** 
- * Simple Square Grid Background
- */
-const SimpleSquareBackground = () => {
-  const rows = 12
-  const cols = 20
-
-  return (
-    <div className="absolute inset-0 z-0 overflow-hidden">
-      <div className="w-full h-full grid gap-[1px] bg-gray-900/20" style={{
-        gridTemplateRows: `repeat(${rows}, 1fr)`,
-        gridTemplateColumns: `repeat(${cols}, 1fr)`
-      }}>
-        {Array.from({ length: rows * cols }, (_, index) => (
-          <div
-            key={index}
-            className="bg-white/5"
-          />
-        ))}
-      </div>
-      {/* Noise effect overlay for hero section only */}
-      <div 
-        className="absolute inset-0 opacity-40 pointer-events-none"
-        style={{
-          backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.15) 1px, transparent 0)',
-          backgroundSize: '20px 20px',
-          animation: 'heroNoise 8s infinite linear'
-        }}
-      />
-    </div>
-  )
-}
+import Squares from './Squares'
 
 // Slimmer brand text
 const CircularText = ({ text }: { text: string }) => (
@@ -55,11 +23,28 @@ const ShinyText = ({ children, className = "" }: { children: React.ReactNode, cl
   </span>
 )
 
-// Modern hero with simple square background and noise effect
+// Modern hero with squares background and noise effect
 export const ModernHeroSection = ({ onGetStarted }: { onGetStarted: () => void }) => {
   return (
     <section className="relative overflow-hidden min-h-[75vh] w-full flex flex-col justify-center items-center py-16 bg-black">
-      <SimpleSquareBackground />
+      {/* Squares Background */}
+      <Squares 
+        speed={0.5} 
+        squareSize={40}
+        direction='diagonal'
+        borderColor='#fff'
+        hoverFillColor='#222'
+      />
+      
+      {/* Noise effect overlay for hero section only */}
+      <div 
+        className="absolute inset-0 opacity-40 pointer-events-none z-10"
+        style={{
+          backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.15) 1px, transparent 0)',
+          backgroundSize: '20px 20px',
+          animation: 'heroNoise 8s infinite linear'
+        }}
+      />
       
       {/* Overlay for contrast */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/40 to-black/80 pointer-events-none z-10" />
