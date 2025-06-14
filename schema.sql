@@ -1,6 +1,6 @@
 
--- DrawBoard Database Schema
--- This file contains the complete database schema for self-hosting DrawBoard
+-- witepad Database Schema
+-- This file contains the complete database schema for self-hosting Witepad
 
 -- Enable necessary extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";

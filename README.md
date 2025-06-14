@@ -32,7 +32,7 @@ A modern, collaborative drawing platform built with React, TypeScript, Tldraw, a
 1. **Clone the repository**
    ```bash
    git clone <your-repo-url>
-   cd drawboard
+   cd Witepad
    ```
 
 2. **Install dependencies**

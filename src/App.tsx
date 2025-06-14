@@ -22,13 +22,13 @@ const App = () => (
         <ThemeProvider>
           <ImprovedToaster />
           <Sonner />
-          <BrowserRouter>
-            <Routes>
+          <BrowserRouter>            <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/documents" element={<Documents />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/editor/:documentId" element={<Editor />} />
+              <Route path="/editor" element={<Editor />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

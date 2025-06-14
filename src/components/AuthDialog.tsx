@@ -77,7 +77,7 @@ export const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-center bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
-            Welcome to DrawBoard
+            Welcome to Witepad
           </DialogTitle>
         </DialogHeader>
         

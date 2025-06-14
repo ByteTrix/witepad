@@ -19,7 +19,7 @@ const Index = () => {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-background">
         <div className="text-center space-y-4">
           <div className="animate-spin rounded-full h-12 w-12 border-2 border-primary border-t-transparent mx-auto"></div>
-          <p className="text-muted-foreground">Loading DrawBoard...</p>
+          <p className="text-muted-foreground">Loading Witepad...</p>
         </div>
       </div>
     )
@@ -105,7 +105,7 @@ const Index = () => {
       <div className="pt-16 h-screen">
         <div className="container mx-auto p-6">
           <div className="flex flex-col items-center justify-center gap-8 pt-12">
-            <h1 className="text-3xl font-bold text-center">Welcome to DrawBoard</h1>
+            <h1 className="text-3xl font-bold text-center">Welcome to Witepad</h1>
             <p className="text-center text-muted-foreground max-w-2xl">
               Create and collaborate on beautiful diagrams and sketches
             </p>
