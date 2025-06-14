@@ -29,8 +29,8 @@ export const ModernHeroSection = ({ onGetStarted }: { onGetStarted: () => void }
     <section className="relative overflow-hidden min-h-[75vh] w-full flex flex-col justify-center items-center py-16 bg-black">
       {/* Squares Background */}
       <Squares 
-        speed={0.5} 
-        squareSize={40}
+        speed={0.3} 
+        squareSize={35}
         direction='diagonal'
         borderColor='#fff'
         hoverFillColor='#222'
