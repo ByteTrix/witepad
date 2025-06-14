@@ -7,11 +7,12 @@ import { Button } from '@/components/ui/button'
 import { useNavigate } from 'react-router-dom'
 import { useDocuments } from '@/hooks/useDocuments'
 
-// Import new modern landing page components
-import { ModernHeroSection } from '@/components/landing/ModernHeroSection'
-import { ModernFeaturesSection } from '@/components/landing/ModernFeaturesSection'
-import { ModernDemoSection } from '@/components/landing/ModernDemoSection'
-import { ModernTestimonialsSection } from '@/components/landing/ModernTestimonialsSection'
+// Import new landing page components
+import { HeroSection } from '@/components/landing/HeroSection'
+import { FeaturesSection } from '@/components/landing/FeaturesSection'
+import { HowItWorksSection } from '@/components/landing/HowItWorksSection'
+import { DemoPreviewSection } from '@/components/landing/DemoPreviewSection'
+import { TestimonialsSection } from '@/components/landing/TestimonialsSection'
 import { ModernFooter } from '@/components/landing/ModernFooter'
 
 const Index = () => {
@@ -39,10 +40,11 @@ const Index = () => {
       <div className="min-h-screen bg-black">
         <Header />
         
-        <ModernHeroSection onGetStarted={() => setAuthDialogOpen(true)} />
-        <ModernFeaturesSection />
-        <ModernDemoSection />
-        <ModernTestimonialsSection />
+        <HeroSection onGetStarted={() => setAuthDialogOpen(true)} />
+        <FeaturesSection />
+        <HowItWorksSection />
+        <DemoPreviewSection />
+        <TestimonialsSection />
         <ModernFooter />
         
         <AuthDialog 
