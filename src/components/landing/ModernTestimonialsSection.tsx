@@ -14,7 +14,7 @@ const ScrollReveal = ({ children, className = "" }: { children: React.ReactNode,
   const [isVisible, setIsVisible] = useState(false)
   const [ref, setRef] = useState<HTMLDivElement | null>(null)
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!ref) return
 
     const observer = new IntersectionObserver(

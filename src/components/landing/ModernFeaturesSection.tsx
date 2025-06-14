@@ -1,6 +1,6 @@
 
 import { Palette, Users, Zap, Cloud, Shield, Globe } from 'lucide-react'
-import { useState } from 'react'
+import React, { useState } from 'react'
 
 const ScrambleText = ({ text, isVisible }: { text: string, isVisible: boolean }) => {
   const [displayText, setDisplayText] = useState(text)
