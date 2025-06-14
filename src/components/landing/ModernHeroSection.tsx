@@ -1,3 +1,4 @@
+
 import React from 'react'
 import { Button } from '@/components/ui/button'
 import { ArrowRight } from 'lucide-react'
@@ -12,16 +13,6 @@ const CircularText = ({ text }: { text: string }) => (
       {text}
     </div>
   </div>
-)
-
-// Gradient text component
-const ShinyText = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
-  <span className={
-    "bg-gradient-to-r from-cyan-400 via-white to-purple-400 bg-clip-text text-transparent font-bold " 
-    + className
-  }>
-    {children}
-  </span>
 )
 
 // Modern hero with squares background and noise effect
