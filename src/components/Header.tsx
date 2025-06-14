@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { AuthDialog } from './AuthDialog'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { PenTool } from 'lucide-react'
+import { ClickSpark } from '@/components/landing/ClickSpark'
 
 export const Header = ({ flat = false }: { flat?: boolean }) => {
   const { user } = useAuth()
@@ -73,13 +74,15 @@ export const Header = ({ flat = false }: { flat?: boolean }) => {
 
         <div className="flex items-center gap-2">
           {!user && (
-            <Button
-              size="sm"
-              className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black px-4 py-1 rounded-full shadow-lg hover:scale-105 transition-all text-sm font-bold"
-              onClick={() => setAuthDialogOpen(true)}
-            >
-              Get Started
-            </Button>
+            <ClickSpark>
+              <Button
+                size="sm"
+                className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black px-4 py-1 rounded-full shadow-lg hover:scale-105 transition-all text-sm font-bold"
+                onClick={() => setAuthDialogOpen(true)}
+              >
+                Get Started
+              </Button>
+            </ClickSpark>
           )}
         </div>
       </nav>

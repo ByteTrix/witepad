@@ -2,6 +2,8 @@ import React from 'react'
 import { Button } from '@/components/ui/button'
 import { ArrowRight } from 'lucide-react'
 import AnimatedBackground from './AnimatedBackground'
+import { ClickSpark } from './ClickSpark'
+import { StarBorder } from './StarBorder'
 
 // Slimmer brand text
 const CircularText = ({ text }: { text: string }) => (
@@ -48,7 +50,7 @@ export const ModernHeroSection = ({ onGetStarted }: { onGetStarted: () => void }
           
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-tight mb-2">
             <span>
-              <ShinyText>Unleash Ideas</ShinyText> 
+              Unleash Ideas
               <span className="text-cyan-400">.</span>
             </span>
             <br />
@@ -62,17 +64,16 @@ export const ModernHeroSection = ({ onGetStarted }: { onGetStarted: () => void }
           </p>
           
           <div className="flex justify-center items-center mt-2">
-            <Button
-              size="lg"
-              className="group bg-gradient-to-r from-cyan-400 to-purple-500 text-black px-8 py-4 rounded-full font-semibold shadow-xl border-0 hover:from-cyan-300 hover:to-purple-400 hover:scale-105 transition-all duration-300 focus-visible:ring-2 focus-visible:ring-cyan-400"
-              onClick={onGetStarted}
-              aria-label="Start Collaborating"
-            >
-              <span className="flex items-center gap-2 text-lg font-semibold">
-                Start Collaborating
-                <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform duration-200" />
-              </span>
-            </Button>
+            <ClickSpark>
+              <div onClick={onGetStarted}>
+                <StarBorder>
+                  <span className="flex items-center gap-2 text-lg font-semibold group-hover:text-black transition-colors duration-300">
+                    Start Collaborating
+                    <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform duration-200" />
+                  </span>
+                </StarBorder>
+              </div>
+            </ClickSpark>
           </div>
         </div>
       </div>

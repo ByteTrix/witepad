@@ -304,6 +304,59 @@
   }
 }
 
+@keyframes rotate-stars {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+.star-border {
+  position: relative;
+  border-radius: 1.75rem;
+  background: linear-gradient(45deg, var(--color-1), var(--color-2));
+  padding: 3px;
+  overflow: hidden;
+  display: inline-block;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.star-border:hover {
+  transform: scale(1.05);
+}
+
+.star-border::before {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  top: 50%;
+  left: 50%;
+  width: 250%;
+  height: 250%;
+  background-image: radial-gradient(circle, white 1px, transparent 1.5px);
+  background-size: 50px 50px;
+  animation: rotate-stars 40s linear infinite;
+  transform-origin: center;
+  transform: translate(-50%, -50%);
+  opacity: 0.3;
+}
+
+.star-border .star-border-content {
+  position: relative;
+  z-index: 1;
+  background-color: hsl(var(--background));
+  border-radius: 1.5rem;
+  padding: 1rem 2rem;
+  transition: background-color 0.3s;
+}
+
+.star-border:hover .star-border-content {
+  background-color: transparent;
+}
+
 /* ReactBits specific styles */
 .effect {
   position: absolute;
