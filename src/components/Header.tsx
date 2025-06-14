@@ -22,21 +22,21 @@ export const Header = ({ flat = false }: { flat?: boolean }) => {
   return (
     <>
       {/* Modern floating glass navbar */}
-      <nav className="fixed left-1/2 top-8 z-[99] -translate-x-1/2 w-[98vw] max-w-5xl rounded-2xl shadow-2xl bg-black/85 ring-2 ring-cyan-400/15 backdrop-blur-2xl px-8 py-4 flex items-center justify-between transition-all border border-cyan-400/10 gap-2">
+      <nav className="fixed left-1/2 top-6 z-[99] -translate-x-1/2 w-[98vw] max-w-5xl rounded-2xl shadow-2xl bg-black/85 ring-2 ring-cyan-400/15 backdrop-blur-2xl px-6 py-2 flex items-center justify-between transition-all border border-cyan-400/10 gap-2">
         {/* Logo/brand */}
         <div
-          className="flex items-center gap-3 cursor-pointer group"
+          className="flex items-center gap-2 cursor-pointer group"
           onClick={() => navigate('/')}
         >
-          <div className="w-11 h-11 bg-gradient-to-tr from-cyan-400 to-purple-500 rounded-xl flex items-center justify-center shadow-lg hover:scale-110 hover:rotate-6 transition-transform">
-            <PenTool className="w-6 h-6 text-black" />
+          <div className="w-9 h-9 bg-gradient-to-tr from-cyan-400 to-purple-500 rounded-xl flex items-center justify-center shadow-lg hover:scale-110 hover:rotate-6 transition-transform">
+            <PenTool className="w-5 h-5 text-black" />
           </div>
-          <span className="text-2xl font-bold bg-gradient-to-r from-cyan-400 via-white to-purple-400 bg-clip-text text-transparent tracking-tight select-none">
+          <span className="text-xl font-bold bg-gradient-to-r from-cyan-400 via-white to-purple-400 bg-clip-text text-transparent tracking-tight select-none">
             Witepad
           </span>
         </div>
 
-        <div className="hidden md:flex flex-1 items-center justify-center">
+        <div className="hidden md:flex flex-1 items-center justify-center text-sm">
           <GooeyNav 
             items={navItems}
             colors={[1,2,3,4]}
@@ -48,7 +48,7 @@ export const Header = ({ flat = false }: { flat?: boolean }) => {
           {!user && (
             <Button
               size="sm"
-              className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black px-8 py-2 rounded-full shadow-lg hover:scale-105 transition"
+              className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black px-6 py-1 rounded-full shadow-lg hover:scale-105 transition"
               onClick={() => setAuthDialogOpen(true)}
             >
               Get Started
@@ -57,7 +57,7 @@ export const Header = ({ flat = false }: { flat?: boolean }) => {
         </div>
       </nav>
       <AuthDialog open={authDialogOpen} onOpenChange={setAuthDialogOpen} />
-      <div className="h-28 md:h-36" /> {/* Spacer for floating nav */}
+      <div className="h-20 md:h-24" /> {/* Spacer for floating nav */}
     </>
   )
 }
