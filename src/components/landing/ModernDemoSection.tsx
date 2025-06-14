@@ -1,4 +1,3 @@
-
 import React, { useState, useContext, createContext } from 'react'
 import { Editor, Tldraw } from 'tldraw'
 import 'tldraw/tldraw.css'
@@ -57,13 +56,20 @@ function InlineEditor({ persistenceKey, onFirstFocus }: { persistenceKey: string
         }
         editor.focus({ focusContainer: false })
         setFocusedEditor(editor)
-        // Hide tip first time editor is focused
+        // Hide tip on FIRST FOCUS
         if (!hasFocused) {
           setHasFocused(true)
           onFirstFocus()
         }
       }}
-      tabIndex={0} // make focusable
+      // Hide tip also when user clicks (i.e., any pointer interaction)
+      onPointerDown={() => {
+        if (!hasFocused) {
+          setHasFocused(true)
+          onFirstFocus()
+        }
+      }}
+      tabIndex={0}
     >
       <Tldraw
         persistenceKey={persistenceKey}
@@ -112,6 +118,7 @@ export const ModernDemoSection = () => {
                   if (!focusedEditor) return
                   blurEditor(focusedEditor)
                   setFocusedEditor(null)
+                  setShowTip(false) // Hide the tip on any canvas click!
                 }}
               >
                 {/* Browser Bar */}
