@@ -26,7 +26,7 @@
     --muted-foreground: 240 5% 64.9%;
 
     --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
+    --accent-foreground: 240 4.8% 95.9%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
@@ -60,11 +60,11 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
     font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1;
     position: relative;
-    font-size: 18px; /* Larger base font size */
+    font-size: 16px; /* Smaller base font size for a sharper look */
   }
   
   /* Disable animations when the user prefers */
@@ -178,19 +178,19 @@
     box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.5);
   }
 
-  /* Larger text sizes across the website */
-  h1 { font-size: 3.5rem; line-height: 1.1; }
-  h2 { font-size: 2.5rem; line-height: 1.2; }
-  h3 { font-size: 2rem; line-height: 1.3; }
-  h4 { font-size: 1.5rem; line-height: 1.4; }
-  h5 { font-size: 1.25rem; line-height: 1.5; }
-  h6 { font-size: 1.125rem; line-height: 1.5; }
-  p { font-size: 1.125rem; line-height: 1.6; }
+  /* Scaled down text sizes for a crisper feel */
+  h1 { font-size: 3rem; line-height: 1.1; }
+  h2 { font-size: 2rem; line-height: 1.2; }
+  h3 { font-size: 1.75rem; line-height: 1.3; }
+  h4 { font-size: 1.25rem; line-height: 1.4; }
+  h5 { font-size: 1.125rem; line-height: 1.5; }
+  h6 { font-size: 1rem; line-height: 1.5; }
+  p { font-size: 1rem; line-height: 1.5; }
   
   @media (max-width: 768px) {
-    h1 { font-size: 2.5rem; }
-    h2 { font-size: 2rem; }
-    h3 { font-size: 1.75rem; }
+    h1 { font-size: 2.25rem; }
+    h2 { font-size: 1.75rem; }
+    h3 { font-size: 1.5rem; }
     p { font-size: 1rem; }
   }
 
