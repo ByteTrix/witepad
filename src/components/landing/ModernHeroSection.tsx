@@ -3,151 +3,113 @@ import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { ArrowRight } from 'lucide-react'
 
-// ReactBits-like: CircularText, ShinyText, ClickSpark, VariableProximity, SquareBackground
-const CircularText = ({ text, className = "" }: { text: string, className?: string }) => (
-  <div className={`flex justify-center items-center mb-8 ${className}`}>
-    <svg width="300" height="80">
-      <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle"
-        className="fill-cyan-400 text-2xl font-satoshi font-extrabold opacity-95"
-        style={{ letterSpacing: 6 }}>
-        {text}
-      </text>
-    </svg>
+/** 
+ * Interactive Square Grid Background 
+ * - On mouse move, highlights the nearest grid square
+ */
+const InteractiveSquareBackground = () => {
+  const rows = 8
+  const cols = 16
+  const [hovered, setHovered] = useState<{r: number, c: number} | null>(null)
+
+  // Generate grid squares
+  return (
+    <div className="absolute inset-0 z-0 flex flex-col">
+      {[...Array(rows)].map((_, r) => (
+        <div className="flex-1 flex flex-row" key={r}>
+          {[...Array(cols)].map((_, c) => {
+            const isActive = hovered && hovered.r === r && hovered.c === c
+            return (
+              <div
+                key={c}
+                className={`flex-1 transition-all duration-200 relative group`}
+                style={{
+                  minWidth: '0',
+                  minHeight: '0',
+                  aspectRatio: '1/1',
+                  background:
+                    isActive
+                      ? 'linear-gradient(135deg, #22d3ee 0%, #a855f7 100%)'
+                      : 'rgba(255,255,255,0.02)',
+                  boxShadow: isActive
+                    ? '0 0 18px 6px #22d3ee44, 0 0 40px 0 #a855f744'
+                    : undefined,
+                  zIndex: isActive ? 2 : 0,
+                  cursor: 'pointer',
+                }}
+                onMouseEnter={() => setHovered({ r, c })}
+                onMouseMove={() => setHovered({ r, c })}
+                onMouseLeave={() => setHovered(null)}
+                aria-label={`Square ${r},${c}`}
+              />
+            )
+          })}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// Slimmer, bolder circular brand text
+const CircularText = ({ text }: { text: string }) => (
+  <div className="flex justify-center items-center mb-6">
+    <div className="rounded-full border-2 border-cyan-400/40 px-4 py-1 text-sm font-bold tracking-widest bg-black/40 shadow-md font-satoshi text-cyan-300 select-none">
+      {text}
+    </div>
   </div>
 )
 
+// Lively gradient brand
 const ShinyText = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
-  <span className={`bg-gradient-to-r from-cyan-400 via-white to-purple-400 bg-clip-text text-transparent animate-shiny-text font-extrabold ${className}`}>{children}</span>
+  <span className={
+    "bg-gradient-to-r from-cyan-400 via-white to-purple-400 bg-clip-text text-transparent font-extrabold " 
+    + className
+  }>
+    {children}
+  </span>
 )
 
-const ClickSpark = ({ children, onClick }: { children: React.ReactNode, onClick?: () => void }) => (
-  <div onClick={onClick} className="relative cursor-pointer transition-all active:scale-95">{children}</div>
-)
-
-const VariableProximity = ({ children }: { children: React.ReactNode }) => (
-  <div className="hover:scale-105 active:scale-97 transition-transform duration-150 inline-block">{children}</div>
-)
-
-// Square Background Pattern Component
-const SquareBackground = () => (
-  <div className="absolute inset-0 overflow-hidden opacity-30">
-    <svg className="absolute inset-0 h-full w-full" aria-hidden="true">
-      <defs>
-        <pattern
-          id="squares"
-          x="0"
-          y="0"
-          width="40"
-          height="40"
-          patternUnits="userSpaceOnUse"
-        >
-          <rect
-            x="0"
-            y="0"
-            width="40"
-            height="40"
-            fill="none"
-            stroke="url(#squareGradient)"
-            strokeWidth="1"
-            opacity="0.3"
-          />
-        </pattern>
-        <linearGradient id="squareGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#22d3ee" />
-          <stop offset="100%" stopColor="#a855f7" />
-        </linearGradient>
-      </defs>
-      <rect width="100%" height="100%" fill="url(#squares)" />
-    </svg>
-    
-    {/* Animated floating squares */}
-    {[...Array(12)].map((_, i) => (
-      <div
-        key={i}
-        className="absolute animate-pulse"
-        style={{
-          left: `${Math.random() * 100}%`,
-          top: `${Math.random() * 100}%`,
-          animationDelay: `${Math.random() * 3}s`,
-          animationDuration: `${3 + Math.random() * 2}s`
-        }}
-      >
-        <div 
-          className="w-2 h-2 bg-gradient-to-r from-cyan-400 to-purple-400 opacity-60"
-          style={{
-            transform: `rotate(${Math.random() * 45}deg)`
-          }}
-        />
-      </div>
-    ))}
-  </div>
-)
-
+// Modern hero
 export const ModernHeroSection = ({ onGetStarted }: { onGetStarted: () => void }) => {
   return (
-    <section className="relative pt-10 md:pt-32 pb-20 min-h-[90vh] flex flex-col justify-center items-center w-full bg-black z-0 select-none transition-all overflow-hidden">
-      <SquareBackground />
+    <section className="relative overflow-hidden min-h-[80vh] w-full flex flex-col justify-center items-center py-10 md:py-24 bg-black">
+      <InteractiveSquareBackground />
       
-      {/* Main gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/80 z-10" />
-      
-      <div className="relative z-20 text-center max-w-5xl mx-auto space-y-12 px-4">
-        <CircularText text="Witepad – Collaborative Canvas" />
+      {/* Overlay for contrast */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/30 to-black/80 pointer-events-none z-10" />
 
-        <div className="space-y-10">
-          <h1 className="text-6xl md:text-8xl lg:text-9xl font-extrabold tracking-tight leading-[0.9] flex flex-col gap-4 items-center">
-            <span className="block">
-              <ShinyText>Draw.</ShinyText>
+      <div className="relative z-20 flex flex-col w-full items-center px-5">
+        <div className="max-w-4xl w-full mx-auto text-center flex flex-col gap-7">
+          <CircularText text="Infinite Canvas, Real Collaboration" />
+          <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight mb-2 transition-all">
+            <span>
+              <ShinyText>Unleash Ideas</ShinyText> 
+              <span className="text-cyan-400">.</span>
             </span>
-            <span className="block">
-              <ShinyText>Share.</ShinyText>
-            </span>
-            <span className="block">
-              <ShinyText>Innovate.</ShinyText>
+            <br />
+            <span className="font-bold text-transparent bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text">
+              Together  
             </span>
           </h1>
-          
-          <div className="text-xl md:text-3xl text-gray-200 font-satoshi font-medium max-w-4xl mx-auto leading-relaxed">
-            Unleash ideas together. Real‑time, secure, infinite canvas for your team's next big thing.
-          </div>
-          
-          <div className="pt-12 flex justify-center">
-            <VariableProximity>
-              <ClickSpark onClick={onGetStarted}>
-                <Button
-                  size="lg"
-                  className="group relative bg-gradient-to-r from-cyan-400 to-purple-500 text-black text-xl px-16 py-8 rounded-full font-bold shadow-2xl hover:from-cyan-300 hover:to-purple-400 hover:scale-110 transition-all border-0 hover:shadow-cyan-400/50"
-                  tabIndex={0}
-                  aria-label="Start Collaborating"
-                >
-                  <span className="flex items-center gap-3 font-satoshi text-2xl font-bold">
-                    Start Collaborating
-                    <ArrowRight className="h-6 w-6 group-hover:translate-x-2 transition-transform duration-300" />
-                  </span>
-                </Button>
-              </ClickSpark>
-            </VariableProximity>
-          </div>
-
-          {/* Modern stats section */}
-          <div className="pt-16 grid grid-cols-3 gap-8 max-w-3xl mx-auto">
-            {[
-              { number: '50K+', label: 'Active Users' },
-              { number: '1M+', label: 'Drawings Created' },
-              { number: '99.9%', label: 'Uptime' }
-            ].map((stat, index) => (
-              <div key={index} className="text-center group hover:scale-110 transition-transform duration-300">
-                <div className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent mb-2">
-                  {stat.number}
-                </div>
-                <div className="text-sm md:text-base text-gray-400 group-hover:text-gray-300 transition-colors font-satoshi">
-                  {stat.label}
-                </div>
-              </div>
-            ))}
+          <p className="text-base md:text-xl text-gray-200 mb-6 font-satoshi tracking-tight max-w-2xl mx-auto">
+            A secure, real-time, infinite canvas for your next big thing. Instantly sketch, brainstorm, and collaborate—without limits.
+          </p>
+          <div className="flex justify-center items-center mt-3">
+            <Button
+              size="lg"
+              className="group bg-gradient-to-r from-cyan-400 to-purple-500 text-black px-10 py-5 rounded-full font-bold shadow-xl border-0 hover:from-cyan-300 hover:to-purple-400 hover:scale-105 transition focus-visible:ring-2 focus-visible:ring-cyan-400"
+              onClick={onGetStarted}
+              aria-label="Start Collaborating"
+            >
+              <span className="flex items-center gap-3 font-satoshi text-lg font-bold">
+                Start Collaborating
+                <ArrowRight className="h-5 w-5 group-hover:translate-x-2 transition-transform duration-200" />
+              </span>
+            </Button>
           </div>
         </div>
       </div>
     </section>
   )
 }
+
