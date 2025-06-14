@@ -65,46 +65,7 @@
     font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1;
     position: relative;
-  }
-
-  /* Global noise effect overlay */
-  body::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-image: 
-      radial-gradient(circle at 1px 1px, rgba(255,255,255,0.15) 1px, transparent 0);
-    background-size: 20px 20px;
-    pointer-events: none;
-    z-index: 1000;
-    opacity: 0.4;
-    animation: noise 8s infinite linear;
-  }
-
-  @keyframes noise {
-    0% { 
-      transform: translate(0, 0); 
-      opacity: 0.4;
-    }
-    25% { 
-      transform: translate(-5%, 5%); 
-      opacity: 0.3;
-    }
-    50% { 
-      transform: translate(-10%, 10%); 
-      opacity: 0.4;
-    }
-    75% { 
-      transform: translate(-5%, 15%); 
-      opacity: 0.3;
-    }
-    100% { 
-      transform: translate(0, 20%); 
-      opacity: 0.4;
-    }
+    font-size: 18px; /* Larger base font size */
   }
   
   /* Disable animations when the user prefers */
@@ -140,6 +101,30 @@
     }
     50% {
       box-shadow: 0 0 40px rgba(34, 211, 238, 0.6), 0 0 60px rgba(168, 85, 247, 0.3);
+    }
+  }
+
+  /* Hero section specific noise animation */
+  @keyframes heroNoise {
+    0% { 
+      transform: translate(0, 0); 
+      opacity: 0.4;
+    }
+    25% { 
+      transform: translate(-5%, 5%); 
+      opacity: 0.3;
+    }
+    50% { 
+      transform: translate(-10%, 10%); 
+      opacity: 0.4;
+    }
+    75% { 
+      transform: translate(-5%, 15%); 
+      opacity: 0.3;
+    }
+    100% { 
+      transform: translate(0, 20%); 
+      opacity: 0.4;
     }
   }
 
@@ -192,6 +177,22 @@
   .focus-glow:focus {
     outline: none;
     box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.5);
+  }
+
+  /* Larger text sizes across the website */
+  h1 { font-size: 3.5rem; line-height: 1.1; }
+  h2 { font-size: 2.5rem; line-height: 1.2; }
+  h3 { font-size: 2rem; line-height: 1.3; }
+  h4 { font-size: 1.5rem; line-height: 1.4; }
+  h5 { font-size: 1.25rem; line-height: 1.5; }
+  h6 { font-size: 1.125rem; line-height: 1.5; }
+  p { font-size: 1.125rem; line-height: 1.6; }
+  
+  @media (max-width: 768px) {
+    h1 { font-size: 2.5rem; }
+    h2 { font-size: 2rem; }
+    h3 { font-size: 1.75rem; }
+    p { font-size: 1rem; }
   }
 }
 

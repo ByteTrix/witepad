@@ -1,4 +1,3 @@
-
 /*
 	Installed from https://reactbits.dev/ts/tailwind/
 */
@@ -260,7 +259,7 @@ const GooeyNav: React.FC<GooeyNavProps> = ({
             }
             100% {
               transform: rotate(calc(var(--rotate) * 1.2)) translate(calc(var(--end-x) * 0.5), calc(var(--end-y) * 0.5));
-              opacity: 1;
+              opacity: 0;
             }
           }
           @keyframes point {
@@ -299,7 +298,6 @@ const GooeyNav: React.FC<GooeyNavProps> = ({
             background: linear-gradient(90deg, #22d3ee 0%, #a855f7 100%);
             box-shadow: 0 2px 24px 0 #22d3ee55, 0 2px 24px 0 #a855f755;
             border-radius: 16px;
-            border: none;
           }
           li::after {
             content: "";
@@ -331,7 +329,7 @@ const GooeyNav: React.FC<GooeyNavProps> = ({
             {items.map((item, index) => (
               <li
                 key={index}
-                className={`py-[0.6em] px-[1em] rounded-full relative cursor-pointer transition-[background-color_color_box-shadow] duration-300 ease shadow-[0_0_0.5px_1.5px_transparent] text-white ${
+                className={`py-[0.6em] px-[1em] rounded-full relative cursor-pointer transition-[background-color_color_box-shadow] duration-300 ease text-white ${
                   activeIndex === index ? "active" : ""
                 }`}
                 onClick={(e) => handleClick(e, index)}

@@ -60,10 +60,10 @@ const Index = () => {
         <div className="container mx-auto p-6">
           <div className="flex flex-col items-center justify-center gap-12 pt-20">
             <div className="text-center space-y-6">
-              <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-cyan-400 via-white to-purple-400 bg-clip-text text-transparent">
+              <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold bg-gradient-to-r from-cyan-400 via-white to-purple-400 bg-clip-text text-transparent">
                 Welcome back to Witepad
               </h1>
-              <p className="text-xl text-gray-300 max-w-2xl leading-relaxed">
+              <p className="text-xl md:text-2xl text-gray-300 max-w-2xl leading-relaxed">
                 Continue creating and collaborating on beautiful diagrams and sketches with your team
               </p>
             </div>
@@ -72,7 +72,7 @@ const Index = () => {
               <Button 
                 size="lg"
                 onClick={() => navigate('/documents')}
-                className="bg-gradient-to-r from-cyan-400 to-purple-500 hover:from-cyan-300 hover:to-purple-400 text-black rounded-full px-8 py-4 text-lg hover:scale-105 transition-all duration-200 font-semibold shadow-lg shadow-cyan-400/25"
+                className="bg-gradient-to-r from-cyan-400 to-purple-500 hover:from-cyan-300 hover:to-purple-400 text-black rounded-full px-8 py-4 text-xl hover:scale-105 transition-all duration-200 font-semibold shadow-lg shadow-cyan-400/25"
               >
                 My Documents
               </Button>
@@ -88,7 +88,7 @@ const Index = () => {
                   }
                   createAndNavigate()
                 }}
-                className="rounded-full border-2 border-cyan-400/50 text-white hover:bg-cyan-400/10 hover:border-cyan-400 px-8 py-4 text-lg hover:scale-105 transition-all duration-200 backdrop-blur-sm"
+                className="rounded-full border-2 border-cyan-400/50 text-white hover:bg-cyan-400/10 hover:border-cyan-400 px-8 py-4 text-xl hover:scale-105 transition-all duration-200 backdrop-blur-sm"
               >
                 New Document
               </Button>

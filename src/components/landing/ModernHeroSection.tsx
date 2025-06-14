@@ -4,13 +4,11 @@ import { Button } from '@/components/ui/button'
 import { ArrowRight } from 'lucide-react'
 
 /** 
- * Interactive Square Grid Background (ReactBits style)
- * - Creates a proper grid with hover effects and smooth transitions
+ * Simple Square Grid Background
  */
-const InteractiveSquareBackground = () => {
+const SimpleSquareBackground = () => {
   const rows = 12
   const cols = 20
-  const [hoveredSquare, setHoveredSquare] = useState<{row: number, col: number} | null>(null)
 
   return (
     <div className="absolute inset-0 z-0 overflow-hidden">
@@ -18,31 +16,22 @@ const InteractiveSquareBackground = () => {
         gridTemplateRows: `repeat(${rows}, 1fr)`,
         gridTemplateColumns: `repeat(${cols}, 1fr)`
       }}>
-        {Array.from({ length: rows * cols }, (_, index) => {
-          const row = Math.floor(index / cols)
-          const col = index % cols
-          const isHovered = hoveredSquare?.row === row && hoveredSquare?.col === col
-          
-          return (
-            <div
-              key={index}
-              className="relative transition-all duration-300 ease-out cursor-pointer"
-              style={{
-                background: isHovered 
-                  ? 'linear-gradient(135deg, #22d3ee 0%, #a855f7 100%)'
-                  : 'rgba(255, 255, 255, 0.02)',
-                boxShadow: isHovered 
-                  ? '0 0 20px rgba(34, 211, 238, 0.6), 0 0 40px rgba(168, 85, 247, 0.4)'
-                  : 'none',
-                transform: isHovered ? 'scale(1.05)' : 'scale(1)',
-                zIndex: isHovered ? 10 : 1,
-              }}
-              onMouseEnter={() => setHoveredSquare({ row, col })}
-              onMouseLeave={() => setHoveredSquare(null)}
-            />
-          )
-        })}
+        {Array.from({ length: rows * cols }, (_, index) => (
+          <div
+            key={index}
+            className="bg-white/5"
+          />
+        ))}
       </div>
+      {/* Noise effect overlay for hero section only */}
+      <div 
+        className="absolute inset-0 opacity-40 pointer-events-none"
+        style={{
+          backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.15) 1px, transparent 0)',
+          backgroundSize: '20px 20px',
+          animation: 'heroNoise 8s infinite linear'
+        }}
+      />
     </div>
   )
 }
@@ -66,11 +55,11 @@ const ShinyText = ({ children, className = "" }: { children: React.ReactNode, cl
   </span>
 )
 
-// Modern hero with proper ReactBits square background
+// Modern hero with simple square background and noise effect
 export const ModernHeroSection = ({ onGetStarted }: { onGetStarted: () => void }) => {
   return (
     <section className="relative overflow-hidden min-h-[75vh] w-full flex flex-col justify-center items-center py-16 bg-black">
-      <InteractiveSquareBackground />
+      <SimpleSquareBackground />
       
       {/* Overlay for contrast */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/40 to-black/80 pointer-events-none z-10" />
@@ -79,7 +68,7 @@ export const ModernHeroSection = ({ onGetStarted }: { onGetStarted: () => void }
         <div className="max-w-3xl w-full mx-auto text-center flex flex-col gap-5">
           <CircularText text="Infinite Canvas, Real Collaboration" />
           
-          <h1 className="text-2xl md:text-4xl lg:text-5xl font-bold tracking-tight text-white leading-tight mb-2">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-tight mb-2">
             <span>
               <ShinyText>Unleash Ideas</ShinyText> 
               <span className="text-cyan-400">.</span>
@@ -90,7 +79,7 @@ export const ModernHeroSection = ({ onGetStarted }: { onGetStarted: () => void }
             </span>
           </h1>
           
-          <p className="text-sm md:text-lg text-gray-300 mb-5 font-medium tracking-tight max-w-xl mx-auto leading-relaxed">
+          <p className="text-lg md:text-xl text-gray-300 mb-5 font-medium tracking-tight max-w-xl mx-auto leading-relaxed">
             A secure, real-time, infinite canvas for your next big thing. Instantly sketch, brainstorm, and collaborate—without limits.
           </p>
           
@@ -101,7 +90,7 @@ export const ModernHeroSection = ({ onGetStarted }: { onGetStarted: () => void }
               onClick={onGetStarted}
               aria-label="Start Collaborating"
             >
-              <span className="flex items-center gap-2 text-base font-semibold">
+              <span className="flex items-center gap-2 text-lg font-semibold">
                 Start Collaborating
                 <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform duration-200" />
               </span>
