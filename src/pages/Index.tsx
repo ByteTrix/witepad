@@ -7,12 +7,11 @@ import { Button } from '@/components/ui/button'
 import { useNavigate } from 'react-router-dom'
 import { useDocuments } from '@/hooks/useDocuments'
 
-// Import new landing page components
-import { HeroSection } from '@/components/landing/HeroSection'
-import { FeaturesSection } from '@/components/landing/FeaturesSection'
-import { HowItWorksSection } from '@/components/landing/HowItWorksSection'
-import { DemoPreviewSection } from '@/components/landing/DemoPreviewSection'
-import { TestimonialsSection } from '@/components/landing/TestimonialsSection'
+// Import new modern landing page components
+import { ModernHeroSection } from '@/components/landing/ModernHeroSection'
+import { ModernFeaturesSection } from '@/components/landing/ModernFeaturesSection'
+import { ModernDemoSection } from '@/components/landing/ModernDemoSection'
+import { ModernTestimonialsSection } from '@/components/landing/ModernTestimonialsSection'
 import { ModernFooter } from '@/components/landing/ModernFooter'
 
 const Index = () => {
@@ -26,8 +25,8 @@ const Index = () => {
       <div className="min-h-screen flex items-center justify-center bg-black">
         <div className="text-center space-y-6">
           <div className="relative">
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-purple-500/30 border-t-purple-500 mx-auto"></div>
-            <div className="absolute inset-0 animate-pulse rounded-full h-16 w-16 border-4 border-cyan-500/20 mx-auto"></div>
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-cyan-400/30 border-t-cyan-400 mx-auto"></div>
+            <div className="absolute inset-0 animate-pulse rounded-full h-16 w-16 border-4 border-purple-400/20 mx-auto"></div>
           </div>
           <p className="text-gray-300 text-lg">Loading Witepad...</p>
         </div>
@@ -40,11 +39,10 @@ const Index = () => {
       <div className="min-h-screen bg-black">
         <Header />
         
-        <HeroSection onGetStarted={() => setAuthDialogOpen(true)} />
-        <FeaturesSection />
-        <HowItWorksSection />
-        <DemoPreviewSection />
-        <TestimonialsSection />
+        <ModernHeroSection onGetStarted={() => setAuthDialogOpen(true)} />
+        <ModernFeaturesSection />
+        <ModernDemoSection />
+        <ModernTestimonialsSection />
         <ModernFooter />
         
         <AuthDialog 
@@ -62,7 +60,7 @@ const Index = () => {
         <div className="container mx-auto p-6">
           <div className="flex flex-col items-center justify-center gap-12 pt-20">
             <div className="text-center space-y-6">
-              <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-white via-purple-400 to-cyan-400 bg-clip-text text-transparent">
+              <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-cyan-400 via-white to-purple-400 bg-clip-text text-transparent">
                 Welcome back to Witepad
               </h1>
               <p className="text-xl text-gray-300 max-w-2xl leading-relaxed">
@@ -74,7 +72,7 @@ const Index = () => {
               <Button 
                 size="lg"
                 onClick={() => navigate('/documents')}
-                className="bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white rounded-full px-8 py-4 text-lg hover:scale-105 transition-all duration-200"
+                className="bg-gradient-to-r from-cyan-400 to-purple-500 hover:from-cyan-300 hover:to-purple-400 text-black rounded-full px-8 py-4 text-lg hover:scale-105 transition-all duration-200 font-semibold shadow-lg shadow-cyan-400/25"
               >
                 My Documents
               </Button>
@@ -90,7 +88,7 @@ const Index = () => {
                   }
                   createAndNavigate()
                 }}
-                className="rounded-full border-2 border-purple-500/50 text-white hover:bg-purple-500/10 hover:border-purple-400 px-8 py-4 text-lg hover:scale-105 transition-all duration-200"
+                className="rounded-full border-2 border-cyan-400/50 text-white hover:bg-cyan-400/10 hover:border-cyan-400 px-8 py-4 text-lg hover:scale-105 transition-all duration-200 backdrop-blur-sm"
               >
                 New Document
               </Button>

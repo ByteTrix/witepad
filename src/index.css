@@ -1,4 +1,5 @@
 
+@import url('https://fonts.googleapis.com/css2?family=Satoshi:wght@300;400;500;600;700;800;900&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -45,6 +46,12 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Custom ReactBits color variables */
+    --color-1: #22d3ee; /* cyan-400 */
+    --color-2: #a855f7; /* purple-500 */
+    --color-3: #06b6d4; /* cyan-500 */
+    --color-4: #8b5cf6; /* violet-500 */
   }
 }
 
@@ -55,6 +62,7 @@
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
   
@@ -76,17 +84,45 @@
     }
   }
 
+  @keyframes shiny-text {
+    0% {
+      background-position: -200% center;
+    }
+    100% {
+      background-position: 200% center;
+    }
+  }
+
+  @keyframes glow-pulse {
+    0%, 100% {
+      box-shadow: 0 0 20px rgba(34, 211, 238, 0.3);
+    }
+    50% {
+      box-shadow: 0 0 40px rgba(34, 211, 238, 0.6), 0 0 60px rgba(168, 85, 247, 0.3);
+    }
+  }
+
   .animate-fade-in {
     animation: fade-in 1s ease-out;
   }
 
-  /* Neon glow effects */
-  .neon-glow {
-    box-shadow: 0 0 20px rgba(168, 85, 247, 0.4), 0 0 40px rgba(168, 85, 247, 0.2);
+  .animate-shiny-text {
+    background: linear-gradient(110deg, #22d3ee, #ffffff, #a855f7, #22d3ee);
+    background-size: 200% 100%;
+    animation: shiny-text 3s ease-in-out infinite;
   }
 
-  .neon-glow-cyan {
+  .animate-glow-pulse {
+    animation: glow-pulse 2s ease-in-out infinite;
+  }
+
+  /* Neon glow effects */
+  .neon-glow {
     box-shadow: 0 0 20px rgba(34, 211, 238, 0.4), 0 0 40px rgba(34, 211, 238, 0.2);
+  }
+
+  .neon-glow-purple {
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.4), 0 0 40px rgba(168, 85, 247, 0.2);
   }
 
   /* Smooth scrolling */
@@ -102,5 +138,72 @@
   
   .hide-scrollbar::-webkit-scrollbar {
     display: none;
+  }
+
+  /* Custom glassmorphism effect */
+  .glass {
+    background: rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(34, 211, 238, 0.1);
+  }
+
+  /* Enhanced focus states */
+  .focus-glow:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.5);
+  }
+}
+
+/* ReactBits specific styles */
+.effect {
+  position: absolute;
+  opacity: 1;
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+  z-index: 1;
+}
+
+.effect.text {
+  color: white;
+  transition: color 0.3s ease;
+}
+
+.effect.text.active {
+  color: black;
+}
+
+.effect.filter {
+  filter: blur(7px) contrast(100) blur(0);
+  mix-blend-mode: lighten;
+}
+
+.effect.filter::before {
+  content: "";
+  position: absolute;
+  inset: -75px;
+  z-index: -2;
+  background: black;
+}
+
+.effect.filter::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(45deg, #22d3ee, #a855f7);
+  transform: scale(0);
+  opacity: 0;
+  z-index: -1;
+  border-radius: 9999px;
+}
+
+.effect.active::after {
+  animation: pill 0.3s ease both;
+}
+
+@keyframes pill {
+  to {
+    transform: scale(1);
+    opacity: 1;
   }
 }

@@ -1,6 +1,72 @@
 
-import { Github, Twitter, Linkedin, Mail } from 'lucide-react'
-import { PenTool } from 'lucide-react'
+import { Github, Twitter, Linkedin, Mail, PenTool } from 'lucide-react'
+import { useState } from 'react'
+
+const ClickSpark = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => {
+  const [sparks, setSparks] = useState<Array<{ id: number, x: number, y: number }>>([])
+
+  const handleClick = (e: React.MouseEvent) => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+    
+    const newSpark = { id: Date.now(), x, y }
+    setSparks(prev => [...prev, newSpark])
+    
+    setTimeout(() => {
+      setSparks(prev => prev.filter(spark => spark.id !== newSpark.id))
+    }, 1000)
+  }
+
+  return (
+    <div className={`relative ${className}`} onClick={handleClick}>
+      {children}
+      {sparks.map(spark => (
+        <div
+          key={spark.id}
+          className="absolute pointer-events-none"
+          style={{ left: spark.x, top: spark.y }}
+        >
+          <div className="w-2 h-2 bg-cyan-400 rounded-full animate-ping" />
+          <div className="absolute inset-0 w-2 h-2 bg-purple-400 rounded-full animate-ping" style={{ animationDelay: '0.1s' }} />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+const Noise = () => {
+  return (
+    <div className="absolute inset-0 opacity-[0.02] mix-blend-screen">
+      <div 
+        className="w-full h-full bg-repeat"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='1' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+          backgroundSize: '256px 256px'
+        }}
+      />
+    </div>
+  )
+}
+
+const Squares = () => {
+  return (
+    <div className="absolute inset-0 overflow-hidden">
+      {[...Array(15)].map((_, i) => (
+        <div
+          key={i}
+          className="absolute w-1 h-1 bg-cyan-400/5 rotate-45 animate-pulse"
+          style={{
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+            animationDelay: `${Math.random() * 3}s`,
+            animationDuration: `${2 + Math.random() * 3}s`
+          }}
+        />
+      ))}
+    </div>
+  )
+}
 
 export const ModernFooter = () => {
   const socialLinks = [
@@ -30,11 +96,14 @@ export const ModernFooter = () => {
   ]
 
   return (
-    <footer className="bg-black border-t border-gray-900 relative overflow-hidden">
+    <footer className="bg-black border-t border-cyan-400/20 relative overflow-hidden">
+      <Noise />
+      <Squares />
+      
       {/* Background Pattern */}
       <div className="absolute inset-0">
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-r from-purple-900/20 to-transparent rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-l from-cyan-900/20 to-transparent rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-r from-cyan-900/10 to-transparent rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-l from-purple-900/10 to-transparent rounded-full blur-3xl" />
       </div>
 
       <div className="container mx-auto px-4 relative z-10">
@@ -44,10 +113,10 @@ export const ModernFooter = () => {
             {/* Brand Section */}
             <div className="space-y-6">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-cyan-600 rounded-xl flex items-center justify-center">
-                  <PenTool className="h-5 w-5 text-white" />
+                <div className="w-10 h-10 bg-gradient-to-br from-cyan-400 to-purple-500 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-400/25">
+                  <PenTool className="h-5 w-5 text-black" />
                 </div>
-                <span className="text-2xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                <span className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
                   Witepad
                 </span>
               </div>
@@ -59,14 +128,15 @@ export const ModernFooter = () => {
               {/* Social Links */}
               <div className="flex gap-4">
                 {socialLinks.map((social, index) => (
-                  <a
-                    key={index}
-                    href={social.href}
-                    aria-label={social.label}
-                    className="w-12 h-12 bg-gray-900 hover:bg-gradient-to-br hover:from-purple-600 hover:to-cyan-600 rounded-xl flex items-center justify-center text-gray-400 hover:text-white transition-all duration-300 group"
-                  >
-                    <social.icon className="h-5 w-5 group-hover:scale-110 transition-transform" />
-                  </a>
+                  <ClickSpark key={index}>
+                    <a
+                      href={social.href}
+                      aria-label={social.label}
+                      className="w-12 h-12 bg-gray-900 hover:bg-gradient-to-br hover:from-cyan-400 hover:to-purple-500 rounded-xl flex items-center justify-center text-gray-400 hover:text-black transition-all duration-300 group border border-gray-800 hover:border-cyan-400/50"
+                    >
+                      <social.icon className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                    </a>
+                  </ClickSpark>
                 ))}
               </div>
             </div>
@@ -81,7 +151,7 @@ export const ModernFooter = () => {
                       <li key={linkIndex}>
                         <a
                           href="#"
-                          className="text-gray-400 hover:text-white transition-colors duration-200 hover:underline"
+                          className="text-gray-400 hover:text-cyan-400 transition-colors duration-200 hover:underline"
                         >
                           {link}
                         </a>
@@ -94,7 +164,7 @@ export const ModernFooter = () => {
           </div>
 
           {/* Bottom Bar */}
-          <div className="pt-8 border-t border-gray-900 flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="pt-8 border-t border-gray-800 flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-gray-500 text-sm">
               © 2024 Witepad. All rights reserved.
             </p>
