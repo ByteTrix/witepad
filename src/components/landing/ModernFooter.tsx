@@ -1,69 +1,55 @@
-
-import { Github, Twitter, Linkedin, Mail } from 'lucide-react'
-import { ClickSpark } from './ClickSpark'
-
+import { Github, Twitter, Linkedin, Mail } from 'lucide-react';
+import { ClickSpark } from './ClickSpark';
 const Noise = () => {
-  return (
-    <div className="absolute inset-0 opacity-[0.02] mix-blend-screen">
-      <div 
-        className="w-full h-full bg-repeat"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='1' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
-          backgroundSize: '256px 256px'
-        }}
-      />
-    </div>
-  )
-}
-
+  return <div className="absolute inset-0 opacity-[0.02] mix-blend-screen">
+      <div className="w-full h-full bg-repeat" style={{
+      backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='1' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+      backgroundSize: '256px 256px'
+    }} />
+    </div>;
+};
 const Squares = () => {
-  return (
-    <div className="absolute inset-0 overflow-hidden">
-      {[...Array(15)].map((_, i) => (
-        <div
-          key={i}
-          className="absolute w-1 h-1 bg-cyan-400/5 rotate-45 animate-pulse"
-          style={{
-            left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 100}%`,
-            animationDelay: `${Math.random() * 3}s`,
-            animationDuration: `${2 + Math.random() * 3}s`
-          }}
-        />
-      ))}
-    </div>
-  )
-}
-
+  return <div className="absolute inset-0 overflow-hidden">
+      {[...Array(15)].map((_, i) => <div key={i} className="absolute w-1 h-1 bg-cyan-400/5 rotate-45 animate-pulse" style={{
+      left: `${Math.random() * 100}%`,
+      top: `${Math.random() * 100}%`,
+      animationDelay: `${Math.random() * 3}s`,
+      animationDuration: `${2 + Math.random() * 3}s`
+    }} />)}
+    </div>;
+};
 export const ModernFooter = () => {
-  const socialLinks = [
-    { icon: Twitter, href: '#', label: 'Twitter' },
-    { icon: Github, href: '#', label: 'GitHub' },
-    { icon: Linkedin, href: '#', label: 'LinkedIn' },
-    { icon: Mail, href: '#', label: 'Email' }
-  ]
-
-  const footerLinks = [
-    {
-      title: 'Product',
-      links: ['Features', 'Pricing', 'Integrations', 'API']
-    },
-    {
-      title: 'Company',
-      links: ['About', 'Blog', 'Careers', 'Press']
-    },
-    {
-      title: 'Support',
-      links: ['Help Center', 'Contact', 'Status', 'Community']
-    },
-    {
-      title: 'Legal',
-      links: ['Privacy', 'Terms', 'Security', 'Cookies']
-    }
-  ]
-
-  return (
-    <footer className="bg-black border-t border-cyan-400/20 relative overflow-hidden">
+  const socialLinks = [{
+    icon: Twitter,
+    href: '#',
+    label: 'Twitter'
+  }, {
+    icon: Github,
+    href: '#',
+    label: 'GitHub'
+  }, {
+    icon: Linkedin,
+    href: '#',
+    label: 'LinkedIn'
+  }, {
+    icon: Mail,
+    href: '#',
+    label: 'Email'
+  }];
+  const footerLinks = [{
+    title: 'Product',
+    links: ['Features', 'Pricing', 'Integrations', 'API']
+  }, {
+    title: 'Company',
+    links: ['About', 'Blog', 'Careers', 'Press']
+  }, {
+    title: 'Support',
+    links: ['Help Center', 'Contact', 'Status', 'Community']
+  }, {
+    title: 'Legal',
+    links: ['Privacy', 'Terms', 'Security', 'Cookies']
+  }];
+  return <footer className="bg-black border-t border-cyan-400/20 relative overflow-hidden">
       <Noise />
       <Squares />
       
@@ -81,11 +67,7 @@ export const ModernFooter = () => {
             <div className="space-y-6">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg shadow-orange-400/25 overflow-hidden">
-                  <img 
-                    src="/lovable-uploads/6b26b4c3-b0a0-4b86-aee7-2b9b6a3f1b92.png" 
-                    alt="Witepad Logo" 
-                    className="w-full h-full object-contain"
-                  />
+                  <img src="/lovable-uploads/6b26b4c3-b0a0-4b86-aee7-2b9b6a3f1b92.png" alt="Witepad Logo" className="w-full h-full object-cover" />
                 </div>
                 <span className="text-2xl font-bold bg-gradient-to-r from-orange-400 to-orange-300 bg-clip-text text-transparent">
                   Witepad
@@ -98,39 +80,26 @@ export const ModernFooter = () => {
 
               {/* Social Links */}
               <div className="flex gap-4">
-                {socialLinks.map((social, index) => (
-                  <ClickSpark key={index}>
-                    <a
-                      href={social.href}
-                      aria-label={social.label}
-                      className="w-12 h-12 bg-gray-900 hover:bg-gradient-to-br hover:from-cyan-400 hover:to-purple-500 rounded-xl flex items-center justify-center text-gray-400 hover:text-black transition-all duration-300 group border border-gray-800 hover:border-cyan-400/50"
-                    >
+                {socialLinks.map((social, index) => <ClickSpark key={index}>
+                    <a href={social.href} aria-label={social.label} className="w-12 h-12 bg-gray-900 hover:bg-gradient-to-br hover:from-cyan-400 hover:to-purple-500 rounded-xl flex items-center justify-center text-gray-400 hover:text-black transition-all duration-300 group border border-gray-800 hover:border-cyan-400/50">
                       <social.icon className="h-5 w-5 group-hover:scale-110 transition-transform" />
                     </a>
-                  </ClickSpark>
-                ))}
+                  </ClickSpark>)}
               </div>
             </div>
 
             {/* Links Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-              {footerLinks.map((section, index) => (
-                <div key={index} className="space-y-4">
+              {footerLinks.map((section, index) => <div key={index} className="space-y-4">
                   <h3 className="font-semibold text-white text-lg">{section.title}</h3>
                   <ul className="space-y-3">
-                    {section.links.map((link, linkIndex) => (
-                      <li key={linkIndex}>
-                        <a
-                          href="#"
-                          className="text-gray-400 hover:text-cyan-400 transition-colors duration-200 hover:underline"
-                        >
+                    {section.links.map((link, linkIndex) => <li key={linkIndex}>
+                        <a href="#" className="text-gray-400 hover:text-cyan-400 transition-colors duration-200 hover:underline">
                           {link}
                         </a>
-                      </li>
-                    ))}
+                      </li>)}
                   </ul>
-                </div>
-              ))}
+                </div>)}
             </div>
           </div>
 
@@ -146,6 +115,5 @@ export const ModernFooter = () => {
           </div>
         </div>
       </div>
-    </footer>
-  )
-}
+    </footer>;
+};
