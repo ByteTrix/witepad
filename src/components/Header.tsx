@@ -12,17 +12,23 @@ import {
 	DropdownMenuTrigger,
 	DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu'
-import { PenTool, Menu, X } from 'lucide-react'
+import { PenTool } from 'lucide-react'
+import GooeyNav from '@/blocks/Components/GooeyNav/GooeyNav'
 
 export const Header = ({ flat = false }: { flat?: boolean }) => {
 	const { user, signOut } = useAuth()
 	const [authDialogOpen, setAuthDialogOpen] = useState(false)
-	const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 	const navigate = useNavigate()
+
+	const navItems = [
+		{ label: 'Home', href: '/' },
+		{ label: 'Documents', href: '/documents' },
+		{ label: 'Editor', href: '/editor' },
+	]
 
 	return (
 		<>
-			<header className="fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-xl border-b border-gray-800/50">
+			<header className="fixed top-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-xl border-b border-gray-800/30">
 				<div className="container mx-auto px-4 h-20 flex items-center justify-between">
 					{/* Logo */}
 					<div 
@@ -37,29 +43,10 @@ export const Header = ({ flat = false }: { flat?: boolean }) => {
 						</span>
 					</div>
 
-					{/* Desktop Navigation */}
-					<nav className="hidden md:flex items-center gap-8">
-						{user && (
-							<>
-								<Button 
-									variant="ghost" 
-									size="sm"
-									onClick={() => navigate('/documents')}
-									className="text-white hover:text-purple-400 hover:bg-purple-500/10 transition-all duration-200"
-								>
-									Documents
-								</Button>
-								<Button 
-									variant="ghost" 
-									size="sm"
-									onClick={() => navigate('/editor')}
-									className="text-white hover:text-cyan-400 hover:bg-cyan-500/10 transition-all duration-200"
-								>
-									New Drawing
-								</Button>
-							</>
-						)}
-					</nav>
+					{/* Desktop Navigation with GooeyNav */}
+					<div className="hidden md:block">
+						{user && <GooeyNav items={navItems} />}
+					</div>
 
 					{/* Desktop Auth */}
 					<div className="hidden md:flex items-center gap-4">
@@ -100,99 +87,7 @@ export const Header = ({ flat = false }: { flat?: boolean }) => {
 							</Button>
 						)}
 					</div>
-
-					{/* Mobile Menu Button */}
-					<Button
-						variant="ghost"
-						size="sm"
-						className="md:hidden text-white hover:bg-purple-500/10"
-						onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-					>
-						{mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-					</Button>
 				</div>
-
-				{/* Mobile Menu */}
-				{mobileMenuOpen && (
-					<div className="md:hidden border-t border-gray-800 bg-black/95 backdrop-blur-xl">
-						<div className="container mx-auto px-4 py-6 space-y-4">
-							{user && (
-								<>
-									<Button 
-										variant="ghost" 
-										size="sm"
-										onClick={() => {
-											navigate('/documents')
-											setMobileMenuOpen(false)
-										}}
-										className="w-full justify-start text-white hover:bg-purple-500/10"
-									>
-										Documents
-									</Button>
-									<Button 
-										variant="ghost" 
-										size="sm"
-										onClick={() => {
-											navigate('/editor')
-											setMobileMenuOpen(false)
-										}}
-										className="w-full justify-start text-white hover:bg-cyan-500/10"
-									>
-										New Drawing
-									</Button>
-								</>
-							)}
-							{user ? (
-								<>
-									<Button 
-										variant="ghost" 
-										size="sm"
-										onClick={() => {
-											navigate('/profile')
-											setMobileMenuOpen(false)
-										}}
-										className="w-full justify-start text-white hover:bg-purple-500/10"
-									>
-										Profile
-									</Button>
-									<Button 
-										variant="ghost" 
-										size="sm"
-										onClick={() => {
-											navigate('/settings')
-											setMobileMenuOpen(false)
-										}}
-										className="w-full justify-start text-white hover:bg-purple-500/10"
-									>
-										Settings
-									</Button>
-									<Button 
-										variant="ghost" 
-										size="sm"
-										onClick={() => {
-											signOut()
-											setMobileMenuOpen(false)
-										}}
-										className="w-full justify-start text-white hover:bg-red-500/10"
-									>
-										Sign Out
-									</Button>
-								</>
-							) : (
-								<Button 
-									size="sm"
-									onClick={() => {
-										setAuthDialogOpen(true)
-										setMobileMenuOpen(false)
-									}}
-									className="w-full bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white border-0 rounded-full"
-								>
-									Get Started
-								</Button>
-							)}
-						</div>
-					</div>
-				)}
 			</header>
 			<AuthDialog open={authDialogOpen} onOpenChange={setAuthDialogOpen} />
 		</>
