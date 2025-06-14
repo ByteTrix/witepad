@@ -292,20 +292,27 @@ const GooeyNav: React.FC<GooeyNavProps> = ({
             color: black;
             text-shadow: none;
           }
+          /* Revamped active nav style: No black background/border */
           li.active::after {
             opacity: 1;
             transform: scale(1);
+            background: linear-gradient(90deg, #22d3ee 0%, #a855f7 100%);
+            box-shadow: 0 2px 24px 0 #22d3ee55, 0 2px 24px 0 #a855f755;
+            border-radius: 16px;
+            border: none;
           }
+          /* Remove background/border from default state too */
           li::after {
             content: "";
             position: absolute;
             inset: 0;
-            border-radius: 8px;
-            background: white;
+            border-radius: 16px;
+            background: transparent;
             opacity: 0;
             transform: scale(0);
             transition: all 0.3s ease;
             z-index: -1;
+            border: none;
           }
         `}
       </style>
