@@ -1,9 +1,9 @@
 
-import { useState, useContext, createContext } from 'react'
+import React, { useState, useContext, createContext } from 'react'
 import { Editor, Tldraw } from 'tldraw'
 import 'tldraw/tldraw.css'
 import { Button } from '@/components/ui/button'
-import { Play, Maximize2 } from 'lucide-react'
+import { Maximize2 } from 'lucide-react'
 
 const focusedEditorContext = createContext(
   {} as {
@@ -12,6 +12,7 @@ const focusedEditorContext = createContext(
   }
 )
 
+// Remove tip after click/focus
 function blurEditor(editor: Editor) {
   editor.blur({ blurContainer: false })
   editor.selectNone()
@@ -21,7 +22,6 @@ function blurEditor(editor: Editor) {
 const TrueFocus = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
   const [isHovered, setIsHovered] = useState(false)
-
   const handleMouseMove = (e: React.MouseEvent) => {
     const rect = e.currentTarget.getBoundingClientRect()
     setMousePosition({
@@ -29,31 +29,23 @@ const TrueFocus = ({ children, className = "" }: { children: React.ReactNode, cl
       y: e.clientY - rect.top
     })
   }
-
   return (
-    <div 
+    <div
       className={`relative ${className}`}
       onMouseMove={handleMouseMove}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Spotlight Effect */}
-      {isHovered && (
-        <div 
-          className="absolute inset-0 pointer-events-none transition-opacity duration-300 z-20"
-          style={{
-            background: `radial-gradient(300px circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(34, 211, 238, 0.1), transparent 70%)`
-          }}
-        />
-      )}
+      {/* Spotlight effect disabled for clarity */}
       {children}
     </div>
   )
 }
 
-function InlineEditor({ persistenceKey }: { persistenceKey: string }) {
+function InlineEditor({ persistenceKey, onFirstFocus }: { persistenceKey: string, onFirstFocus: () => void }) {
   const { focusedEditor, setFocusedEditor } = useContext(focusedEditorContext)
   const [editor, setEditor] = useState<Editor>()
+  const [hasFocused, setHasFocused] = useState(false)
 
   return (
     <div
@@ -65,7 +57,13 @@ function InlineEditor({ persistenceKey }: { persistenceKey: string }) {
         }
         editor.focus({ focusContainer: false })
         setFocusedEditor(editor)
+        // Hide tip first time editor is focused
+        if (!hasFocused) {
+          setHasFocused(true)
+          onFirstFocus()
+        }
       }}
+      tabIndex={0} // make focusable
     >
       <Tldraw
         persistenceKey={persistenceKey}
@@ -91,14 +89,10 @@ function InlineEditor({ persistenceKey }: { persistenceKey: string }) {
 
 export const ModernDemoSection = () => {
   const [focusedEditor, setFocusedEditor] = useState<Editor | null>(null)
+  const [showTip, setShowTip] = useState(true)
 
   return (
     <section id="demo" className="py-32 bg-black relative overflow-hidden">
-      {/* Background Effects */}
-      <div className="absolute inset-0">
-        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-full h-full bg-gradient-to-b from-purple-900/10 via-transparent to-cyan-900/10" />
-      </div>
-
       <div className="container mx-auto px-4 relative z-10">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
@@ -107,14 +101,12 @@ export const ModernDemoSection = () => {
               See It In Action
             </h2>
             <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-              Experience the power of real-time collaboration with our interactive whiteboard
+              Experience real-time collaboration now.
             </p>
           </div>
-
-          {/* Interactive Demo */}
           <TrueFocus className="group">
             <focusedEditorContext.Provider value={{ focusedEditor, setFocusedEditor }}>
-              <div 
+              <div
                 className="relative bg-gradient-to-br from-gray-900 to-black border border-cyan-400/20 rounded-3xl overflow-hidden shadow-2xl group-hover:shadow-cyan-400/20 transition-all duration-500"
                 onPointerDown={() => {
                   if (!focusedEditor) return
@@ -138,28 +130,28 @@ export const ModernDemoSection = () => {
                     <Maximize2 className="h-4 w-4" />
                   </Button>
                 </div>
-
                 {/* TLDraw Canvas */}
                 <div className="p-6 bg-gradient-to-br from-gray-900/50 to-black">
-                  <InlineEditor persistenceKey="demo-canvas" />
+                  <InlineEditor persistenceKey="demo-canvas" onFirstFocus={() => setShowTip(false)} />
                 </div>
-
-                {/* Floating Instructions */}
-                <div className="absolute bottom-6 left-6 bg-black/80 backdrop-blur-sm border border-cyan-400/20 rounded-lg p-4 max-w-sm">
-                  <p className="text-sm text-gray-300">
-                    <span className="text-cyan-400 font-semibold">Try it out!</span> Click and drag to draw, use tools to create shapes, and experience real-time collaboration.
-                  </p>
-                </div>
+                {/* Tip only if not dismissed */}
+                {showTip && (
+                  <div className="absolute bottom-6 left-6 bg-black/85 backdrop-blur-sm border border-cyan-400/20 rounded-lg p-4 max-w-sm pointer-events-none transition-opacity duration-500">
+                    <p className="text-sm text-gray-300">
+                      <span className="text-cyan-400 font-semibold">Try it out!</span>{" "}
+                      Click and drag to draw, use tools, and see real-time sync. This tip will disappear after you start editing.
+                    </p>
+                  </div>
+                )}
               </div>
             </focusedEditorContext.Provider>
           </TrueFocus>
-
-          {/* Feature Highlights */}
+          {/* Features highlight */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16">
             {[
-              { title: "Real-time Sync", description: "See changes instantly across all connected devices" },
-              { title: "Infinite Canvas", description: "Draw without boundaries on an unlimited workspace" },
-              { title: "Professional Tools", description: "Complete set of drawing and annotation tools" }
+              { title: "Real-time Sync", description: "See changes instantly on all screens" },
+              { title: "Infinite Canvas", description: "No boundaries—just ideas" },
+              { title: "Secure & Fast", description: "Private, encrypted, blazing fast" }
             ].map((feature, index) => (
               <div key={index} className="text-center space-y-3 p-6 rounded-2xl border border-gray-800 bg-gray-900/30 backdrop-blur-sm hover:border-cyan-400/30 transition-all duration-300">
                 <h3 className="text-lg font-semibold text-white">{feature.title}</h3>
