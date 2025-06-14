@@ -4,7 +4,6 @@ import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { AuthDialog } from './AuthDialog'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
-import { PenTool } from 'lucide-react'
 import { ClickSpark } from '@/components/landing/ClickSpark'
 
 export const Header = ({ flat = false }: { flat?: boolean }) => {
@@ -29,10 +28,14 @@ export const Header = ({ flat = false }: { flat?: boolean }) => {
           className="flex items-center gap-2 cursor-pointer group"
           onClick={() => navigate('/')}
         >
-          <div className="w-8 h-8 bg-gradient-to-tr from-cyan-400 to-purple-500 rounded-lg flex items-center justify-center shadow-lg hover:scale-110 hover:rotate-6 transition-transform">
-            <PenTool className="w-4 h-4 text-black" />
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center shadow-lg hover:scale-110 hover:rotate-6 transition-transform overflow-hidden">
+            <img 
+              src="/lovable-uploads/6b26b4c3-b0a0-4b86-aee7-2b9b6a3f1b92.png" 
+              alt="Witepad Logo" 
+              className="w-full h-full object-contain"
+            />
           </div>
-          <span className="text-lg font-bold bg-gradient-to-r from-cyan-400 via-white to-purple-400 bg-clip-text text-transparent tracking-tight select-none">
+          <span className="text-lg font-bold bg-gradient-to-r from-orange-400 via-white to-orange-400 bg-clip-text text-transparent tracking-tight select-none">
             Witepad
           </span>
         </div>

@@ -1,4 +1,5 @@
-import { Github, Twitter, Linkedin, Mail, PenTool } from 'lucide-react'
+
+import { Github, Twitter, Linkedin, Mail } from 'lucide-react'
 import { ClickSpark } from './ClickSpark'
 
 const Noise = () => {
@@ -79,10 +80,14 @@ export const ModernFooter = () => {
             {/* Brand Section */}
             <div className="space-y-6">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-cyan-400 to-purple-500 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-400/25">
-                  <PenTool className="h-5 w-5 text-black" />
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg shadow-orange-400/25 overflow-hidden">
+                  <img 
+                    src="/lovable-uploads/6b26b4c3-b0a0-4b86-aee7-2b9b6a3f1b92.png" 
+                    alt="Witepad Logo" 
+                    className="w-full h-full object-contain"
+                  />
                 </div>
-                <span className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
+                <span className="text-2xl font-bold bg-gradient-to-r from-orange-400 to-orange-300 bg-clip-text text-transparent">
                   Witepad
                 </span>
               </div>
