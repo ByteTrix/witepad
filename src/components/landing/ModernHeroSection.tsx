@@ -1,8 +1,7 @@
-
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 import { Button } from '@/components/ui/button'
 import { ArrowRight } from 'lucide-react'
-import Squares from './Squares'
+import AnimatedBackground from './AnimatedBackground'
 
 // Slimmer brand text
 const CircularText = ({ text }: { text: string }) => (
@@ -27,14 +26,8 @@ const ShinyText = ({ children, className = "" }: { children: React.ReactNode, cl
 export const ModernHeroSection = ({ onGetStarted }: { onGetStarted: () => void }) => {
   return (
     <section className="relative overflow-hidden min-h-[75vh] w-full flex flex-col justify-center items-center py-16 bg-black">
-      {/* Squares Background */}
-      <Squares 
-        speed={0.3} 
-        squareSize={35}
-        direction='diagonal'
-        borderColor='#fff'
-        hoverFillColor='#222'
-      />
+      {/* Animated Background */}
+      <AnimatedBackground />
       
       {/* Noise effect overlay for hero section only */}
       <div 
