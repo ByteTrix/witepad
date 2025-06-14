@@ -172,7 +172,7 @@ const GooeyNav: React.FC<GooeyNavProps> = ({
     <>
       {/* This effect is quite difficult to recreate faithfully using Tailwind, so a style tag is a necessary workaround */}
       <style>
-        {\`
+        {`
           :root {
             --linear-ease: linear(0, 0.068, 0.19 2.7%, 0.804 8.1%, 1.037, 1.199 13.2%, 1.245, 1.27 15.8%, 1.274, 1.272 17.4%, 1.249 19.1%, 0.996 28%, 0.949, 0.928 33.3%, 0.926, 0.933 36.8%, 1.001 45.6%, 1.013, 1.019 50.8%, 1.018 54.4%, 1 63.1%, 0.995 68%, 1.001 85%, 1);
           }
@@ -311,7 +311,7 @@ const GooeyNav: React.FC<GooeyNavProps> = ({
             z-index: -1;
             border: none;
           }
-        \`}
+        `}
       </style>
       <div className="relative" ref={containerRef}>
         <nav
@@ -329,9 +329,9 @@ const GooeyNav: React.FC<GooeyNavProps> = ({
             {items.map((item, index) => (
               <li
                 key={index}
-                className={\`py-[0.6em] px-[1em] rounded-full relative cursor-pointer transition-[background-color_color_box-shadow] duration-300 ease text-white \${
+                className={`py-[0.6em] px-[1em] rounded-full relative cursor-pointer transition-[background-color_color_box-shadow] duration-300 ease text-white ${
                   activeIndex === index ? "active" : ""
-                }\`}
+                }`}
                 onClick={(e) => handleClick(e, index)}
               >
                 <span tabIndex={0} className="outline-none">
