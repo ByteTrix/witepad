@@ -1,11 +1,11 @@
+
 import { Tldraw, TLComponents, TLUserPreferences, useTldrawUser, useToasts, DefaultPageMenu } from 'tldraw'
 import { useSyncDemo } from '@tldraw/sync'
 import 'tldraw/tldraw.css'
 import { useEffect, useCallback, useMemo, useState, useRef } from 'react'
-import { useDocuments, Document } from '@/hooks/useDocuments'
+import { useDocuments } from '@/hooks/useDocuments'
 import { useAuth } from '@/contexts/AuthContext'
 import { TopPanel, SharePanel } from './editor/EditorHeader'
-import { StatusIndicator } from './editor/StatusIndicator'
 
 interface SimpleEditorProps {
   documentId?: string
@@ -209,13 +209,10 @@ const CustomPageMenu = ({ documentId }: { documentId?: string }) => {
 
 export const SimpleEditor = ({ documentId, isPublicRoom = false }: SimpleEditorProps) => {
   const roomId = documentId || 'default-room'
-  const { updateDocument, documents, isOffline } = useDocuments()
+  const { updateDocument } = useDocuments()
   const { user } = useAuth()
   
-  const [isSaving, setIsSaving] = useState(false)
-  const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null)
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
-  
+  // ...existing code...
   // Create user preferences with custom user data
   const [userPreferences, setUserPreferences] = useState<TLUserPreferences>(() => {
     if (isPublicRoom && !user) {
@@ -245,61 +242,20 @@ export const SimpleEditor = ({ documentId, isPublicRoom = false }: SimpleEditorP
       }))
     }
   }, [user, isPublicRoom])
-
-  // Create sync store with user info, connected to local server
-  const sync = useSyncDemo({
-    roomId,
-    userInfo: userPreferences,
-    hostUrl: 'ws://localhost:3001',
-  })
-
-  const [connectionStatus, setConnectionStatus] = useState('connecting')
-  useEffect(() => {
-    if (!sync?.store) return
-    const store = sync.store
-    
-    setConnectionStatus(store.connectionStatus)
-    
-    const unsub = store.listen(() => {
-      setConnectionStatus(store.connectionStatus)
-    }, { source: 'store', scope: 'status' })
-    
-    return () => unsub()
-  }, [sync])
-
-  const isConnected = connectionStatus === 'online'
-
-  const currentDocument = useMemo(() => {
-    if (!documentId) return null
-    return documents.find((doc) => doc.id === documentId) ?? null
-  }, [documentId, documents])
-
-  const doUpdateDocument = useCallback(async (updates: Partial<Document>) => {
-    if (!documentId) return
-    setIsSaving(true)
-    setHasUnsavedChanges(false) // Optimistically set to false
-    const success = await updateDocument(documentId, updates)
-    setIsSaving(false)
-    if (success) {
-      setLastSaveTime(new Date())
-    } else {
-      setHasUnsavedChanges(true) // Revert if save failed
-    }
-  }, [documentId, updateDocument])
+  // Create sync store with user info
+  const sync = useSyncDemo({ roomId, userInfo: userPreferences })
 
   // Create tldraw user object
-  const tldrawUser = useTldrawUser({ userPreferences, setUserPreferences })
-  // Cloud save function (without toast - toast is handled in the KeyboardShortcuts component)
+  const tldrawUser = useTldrawUser({ userPreferences, setUserPreferences })  // Cloud save function (without toast - toast is handled in the KeyboardShortcuts component)
   const handleCloudSave = useCallback(() => {
     if (isPublicRoom || !user || !documentId || !sync || !sync.store) return
     const store = sync.store
     const allRecords = store.allRecords()
-    doUpdateDocument({
+    updateDocument(documentId, {
       data: JSON.stringify(allRecords),
       snapshot: JSON.stringify(allRecords),
     })
-  }, [user, documentId, sync, isPublicRoom, doUpdateDocument])
-  // Configure custom UI zones
+  }, [user, documentId, sync, updateDocument, isPublicRoom])  // Configure custom UI zones
   const components: TLComponents = useMemo(() => ({
     TopPanel: () => (
       <TopPanelWithShortcuts
@@ -321,33 +277,22 @@ export const SimpleEditor = ({ documentId, isPublicRoom = false }: SimpleEditorP
     ),
   }), [documentId, userPreferences, setUserPreferences, handleCloudSave, isPublicRoom, user])
 
-  // Effect to track unsaved changes
+  // Defensive: Only proceed if sync and sync.store are defined
+  // Only save to cloud for authenticated users with real documents (not public rooms)
   useEffect(() => {
     if (isPublicRoom || !user || !documentId || !sync || !sync.store) return
     const store = sync.store
-    const onDocumentChange = () => {
-      setHasUnsavedChanges(true)
-    }
-    const unsubscribe = store.listen(onDocumentChange, { scope: 'document' })
+    const unsubscribe = store.listen(
+      () => {
+        const allRecords = store.allRecords()
+        updateDocument(documentId, {
+          data: JSON.stringify(allRecords),
+          snapshot: JSON.stringify(allRecords),
+        })      },
+      { scope: 'document' }
+    )
     return () => unsubscribe()
-  }, [sync, documentId, user, isPublicRoom])
-
-  // Effect for debounced saving
-  useEffect(() => {
-    if (!hasUnsavedChanges) return
-    
-    const debounceSave = setTimeout(() => {
-      if (!sync || !sync.store) return
-      const allRecords = sync.store.allRecords()
-      doUpdateDocument({
-        data: JSON.stringify(allRecords),
-        snapshot: JSON.stringify(allRecords),
-      })
-    }, 2000) // 2-second debounce
-
-    return () => clearTimeout(debounceSave)
-  }, [hasUnsavedChanges, doUpdateDocument, sync])
-
+  }, [sync, updateDocument, documentId, user, isPublicRoom])
 
   if (!sync || !sync.store) return null
 
@@ -358,14 +303,6 @@ export const SimpleEditor = ({ documentId, isPublicRoom = false }: SimpleEditorP
         components={components}
         user={tldrawUser}
         inferDarkMode 
-      />
-      <StatusIndicator
-        isConnected={isConnected}
-        isOffline={isOffline}
-        hasUnsavedChanges={hasUnsavedChanges}
-        lastSaveTime={lastSaveTime}
-        currentDocument={currentDocument}
-        isSaving={isSaving}
       />
     </div>
   )
