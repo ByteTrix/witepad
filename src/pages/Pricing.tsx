@@ -1,7 +1,7 @@
 
 import { Header } from '@/components/Header'
 import { Button } from '@/components/ui/button'
-import { Check } from 'lucide-react'
+import { Check, Loader2 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { AuthDialog } from '@/components/AuthDialog'
 import { useState } from 'react'
@@ -9,6 +9,7 @@ import { useState } from 'react'
 const Pricing = () => {
   const { user } = useAuth()
   const [authDialogOpen, setAuthDialogOpen] = useState(false)
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null)
 
   const plans = [
     {
@@ -59,13 +60,22 @@ const Pricing = () => {
     }
   ]
 
-  const handlePlanSelect = (planName: string) => {
+  const handlePlanSelect = async (planName: string) => {
+    if (loadingPlan) return;
+    
+    setLoadingPlan(planName);
+    
+    // Simulate loading delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
     if (!user && planName === 'Free') {
       setAuthDialogOpen(true)
     } else {
       // Handle other plan selections
       console.log(`Selected plan: ${planName}`)
     }
+    
+    setLoadingPlan(null);
   }
 
   return (
@@ -127,9 +137,16 @@ const Pricing = () => {
                       : 'bg-gray-800 hover:bg-gray-700 text-white border border-gray-600'
                   } transition-all duration-200`}
                   onClick={() => handlePlanSelect(plan.name)}
-                  disabled={plan.disabled}
+                  disabled={plan.disabled || loadingPlan === plan.name}
                 >
-                  {plan.buttonText}
+                  {loadingPlan === plan.name ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    plan.buttonText
+                  )}
                 </Button>
               </div>
             ))}

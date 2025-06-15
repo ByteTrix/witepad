@@ -6,6 +6,7 @@ import { AuthDialog } from './AuthDialog';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { ClickSpark } from '@/components/landing/ClickSpark';
 import { UserAvatar } from './UserAvatar';
+import { Loader2 } from 'lucide-react';
 
 export const Header = ({
   flat = false
@@ -14,6 +15,7 @@ export const Header = ({
 }) => {
   const { user } = useAuth();
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -24,11 +26,27 @@ export const Header = ({
     { label: 'Demo', href: '#demo' }
   ];
 
+  const handleNavigation = (href: string) => {
+    setIsNavigating(true);
+    setTimeout(() => {
+      if (href.startsWith('#')) {
+        // Handle anchor links
+        const element = document.querySelector(href);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      } else {
+        navigate(href);
+      }
+      setIsNavigating(false);
+    }, 100);
+  };
+
   return <>
       {/* Modern floating glass navbar */}
       <nav className="fixed left-1/2 top-4 z-[99] -translate-x-1/2 w-[98vw] max-w-5xl rounded-2xl shadow-2xl bg-black/85 ring-2 ring-cyan-400/15 backdrop-blur-2xl px-4 py-1.5 flex items-center justify-between transition-all border border-cyan-400/10 gap-2">
         {/* Logo/brand */}
-        <div className="flex items-center gap-2 cursor-pointer group" onClick={() => navigate('/')}>
+        <div className="flex items-center gap-2 cursor-pointer group" onClick={() => handleNavigation('/')}>
           <div className="w-8 h-8 rounded-lg flex items-center justify-center shadow-lg hover:scale-110 hover:rotate-6 transition-transform overflow-hidden">
             <img alt="Witepad Logo" className="w-full h-full object-contain" src="/witepad-logo.png" />
           </div>
@@ -43,11 +61,37 @@ export const Header = ({
               const isAnchor = item.href.startsWith('#');
               const isActive = isAnchor ? location.hash === item.href : location.pathname === item.href && location.hash === '';
               return <li key={item.label}>
-                  {isAnchor ? <a href={item.href} className={`px-3 py-1 rounded-full text-sm font-medium transition-colors duration-200 ${isActive ? 'text-cyan-300' : 'text-gray-300 hover:text-white'}`}>
+                  {isAnchor ? 
+                    <button 
+                      onClick={() => handleNavigation(item.href)}
+                      className={`px-3 py-1 rounded-full text-sm font-medium transition-colors duration-200 ${
+                        isActive 
+                          ? 'text-cyan-300 bg-cyan-300/10 border border-cyan-300/20' 
+                          : 'text-gray-300 hover:text-white hover:bg-white/5'
+                      }`}
+                      disabled={isNavigating}
+                    >
+                      {isNavigating && location.hash === item.href ? (
+                        <Loader2 className="mr-2 h-3 w-3 animate-spin inline" />
+                      ) : null}
                       {item.label}
-                    </a> : <Link to={item.href} className={`px-3 py-1 rounded-full text-sm font-medium transition-colors duration-200 ${isActive ? 'text-cyan-300' : 'text-gray-300 hover:text-white'}`}>
+                    </button>
+                    : 
+                    <Link 
+                      to={item.href} 
+                      className={`px-3 py-1 rounded-full text-sm font-medium transition-colors duration-200 flex items-center ${
+                        isActive 
+                          ? 'text-cyan-300 bg-cyan-300/10 border border-cyan-300/20' 
+                          : 'text-gray-300 hover:text-white hover:bg-white/5'
+                      }`}
+                      onClick={() => setIsNavigating(true)}
+                    >
+                      {isNavigating && location.pathname === item.href ? (
+                        <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                      ) : null}
                       {item.label}
-                    </Link>}
+                    </Link>
+                  }
                 </li>;
             })}
           </ul>
