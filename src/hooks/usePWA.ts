@@ -6,24 +6,38 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
 }
 
+interface ServiceWorkerRegistrationWithSync extends ServiceWorkerRegistration {
+  sync?: {
+    register(tag: string): Promise<void>
+  }
+}
+
 export const usePWA = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [isInstalled, setIsInstalled] = useState(false)
   const [isOnline, setIsOnline] = useState(navigator.onLine)
-
   useEffect(() => {
-    // Register service worker
-    if ('serviceWorker' in navigator) {
+    // Only register service worker in production builds to avoid development issues
+    const isProduction = import.meta.env.PROD
+    const isDevelopment = import.meta.env.DEV || window.location.hostname === 'localhost'
+    
+    if ('serviceWorker' in navigator && isProduction && !isDevelopment) {
       window.addEventListener('load', async () => {
         try {
-          const registration = await navigator.serviceWorker.register('/sw.js')
-          console.log('Service Worker registered:', registration)
+          const registration = await navigator.serviceWorker.register('/sw.js', {
+            scope: '/'
+          }) as ServiceWorkerRegistrationWithSync
           
-          // Register for background sync
-          if ('sync' in window.ServiceWorkerRegistration.prototype) {
-            registration.sync.register('document-sync')
+          // Register for background sync if supported
+          if ('sync' in window.ServiceWorkerRegistration.prototype && registration.sync) {
+            try {
+              await registration.sync.register('document-sync')
+            } catch (syncError) {
+              // Silently fail - background sync is not critical
+            }
           }
         } catch (error) {
+          // Service Worker registration failed - app should still work
           console.error('Service Worker registration failed:', error)
         }
       })

@@ -1,7 +1,7 @@
 
-const CACHE_NAME = 'witepad-v1';
-const STATIC_CACHE = 'witepad-static-v1';
-const DYNAMIC_CACHE = 'witepad-dynamic-v1';
+const CACHE_NAME = 'witepad-v2';
+const STATIC_CACHE = 'witepad-static-v2';
+const DYNAMIC_CACHE = 'witepad-dynamic-v2';
 
 // Static assets to cache immediately
 const STATIC_ASSETS = [
@@ -22,6 +22,9 @@ self.addEventListener('install', (event) => {
       })
       .then(() => {
         return self.skipWaiting();
+      })
+      .catch((error) => {
+        console.error('Error caching static assets:', error);
       })
   );
 });
@@ -62,6 +65,44 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Skip chrome-extension and other non-web requests
+  if (url.protocol === 'chrome-extension:' || url.protocol === 'moz-extension:') {
+    return;
+  }
+  // Handle CSS files specially to avoid 400 errors
+  if (request.url.includes('.css') || request.headers.get('Accept')?.includes('text/css')) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response.ok) {
+            const responseClone = response.clone();
+            caches.open(DYNAMIC_CACHE)
+              .then((cache) => {
+                cache.put(request, responseClone);
+              })
+              .catch((error) => {
+                console.log('Cache storage failed for CSS:', error);
+              });
+          }
+          return response;
+        })
+        .catch((error) => {
+          console.log('CSS fetch failed, trying cache:', error.message);
+          return caches.match(request)
+            .then((cachedResponse) => {
+              if (cachedResponse) {
+                return cachedResponse;
+              }
+              // Return a minimal CSS response to prevent errors
+              return new Response('/* CSS not available offline */', {
+                headers: { 'Content-Type': 'text/css' }
+              });
+            });
+        })
+    );
+    return;
+  }
+
   // Cache-first strategy for static assets
   if (STATIC_ASSETS.some(asset => url.pathname === asset)) {
     event.respondWith(
@@ -83,6 +124,9 @@ self.addEventListener('fetch', (event) => {
           caches.open(DYNAMIC_CACHE)
             .then((cache) => {
               cache.put(request, responseClone);
+            })
+            .catch((error) => {
+              console.log('Cache storage failed:', error);
             });
         }
         return response;
