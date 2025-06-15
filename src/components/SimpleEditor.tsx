@@ -1,5 +1,4 @@
-import { Tldraw, TLComponents, TLUserPreferences, useTldrawUser, useToasts, DefaultPageMenu } from 'tldraw'
-import { useSyncDemo } from '@tldraw/sync'
+import { Tldraw, TLComponents, TLUserPreferences, useTldrawUser, useToasts, createTLStore, defaultShapeUtils, defaultBindingUtils } from 'tldraw'
 import 'tldraw/tldraw.css'
 import { useEffect, useCallback, useMemo, useState, useRef } from 'react'
 import { useDocuments, Document } from '@/hooks/useDocuments'
@@ -202,7 +201,6 @@ const CustomPageMenu = ({ documentId, currentDocument, renameDocument }: { docum
 }
 
 export const SimpleEditor = ({ documentId, isPublicRoom = false }: SimpleEditorProps) => {
-  const roomId = documentId || 'default-room'
   const { updateDocument, loadDocument, currentDocument, renameDocument } = useDocuments({ skipInitialFetch: true })
   const { user } = useAuth()
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -240,22 +238,40 @@ export const SimpleEditor = ({ documentId, isPublicRoom = false }: SimpleEditorP
         id: user.id,
         name: user.email?.split('@')[0] || 'Anonymous',
       }))
+    }  }, [user, isPublicRoom])
+  // Create a local TLDraw store instead of using useSyncDemo for better performance
+  // This removes unnecessary collaboration overhead since we handle multi-user via Supabase
+  const store = useMemo(() => {
+    return createTLStore({
+      shapeUtils: defaultShapeUtils,
+      bindingUtils: defaultBindingUtils,
+    })
+  }, [])
+
+  // Load document data into store when document is loaded
+  useEffect(() => {
+    if (currentDocument && currentDocument.data && store) {
+      try {
+        const records = JSON.parse(currentDocument.data)
+        if (Array.isArray(records) && records.length > 0) {
+          store.put(records)
+        }
+      } catch (error) {
+        console.error('Error loading document data:', error)
+      }
     }
-  }, [user, isPublicRoom])
-  // Create sync store with user info
-  const sync = useSyncDemo({ roomId, userInfo: userPreferences })
+  }, [currentDocument, store])
 
   // Create tldraw user object
   const tldrawUser = useTldrawUser({ userPreferences, setUserPreferences })  // Cloud save function (without toast - toast is handled in the KeyboardShortcuts component)
   const handleCloudSave = useCallback(() => {
-    if (isPublicRoom || !user || !documentId || !sync || !sync.store) return
-    const store = sync.store
+    if (isPublicRoom || !user || !documentId || !store) return
     const allRecords = store.allRecords()
     updateDocument(documentId, {
       data: JSON.stringify(allRecords),
       snapshot: JSON.stringify(allRecords),
     })
-  }, [user, documentId, sync, updateDocument, isPublicRoom])  // Configure custom UI zones
+  }, [user, documentId, store, updateDocument, isPublicRoom])// Configure custom UI zones
   const components: TLComponents = useMemo(() => ({
     TopPanel: () => (
       <TopPanelWithShortcuts
@@ -275,12 +291,10 @@ export const SimpleEditor = ({ documentId, isPublicRoom = false }: SimpleEditorP
     PageMenu: () => (
       <CustomPageMenu documentId={documentId} currentDocument={currentDocument} renameDocument={renameDocument} />
     ),
-  }), [documentId, userPreferences, setUserPreferences, handleCloudSave, isPublicRoom, user, currentDocument, renameDocument])
-  // Defensive: Only proceed if sync and sync.store are defined
+  }), [documentId, userPreferences, setUserPreferences, handleCloudSave, isPublicRoom, user, currentDocument, renameDocument])  // Defensive: Only proceed if store is defined
   // Only save to cloud for authenticated users with real documents (not public rooms)
   useEffect(() => {
-    if (isPublicRoom || !user || !documentId || !sync || !sync.store) return
-    const store = sync.store
+    if (isPublicRoom || !user || !documentId || !store) return
     const unsubscribe = store.listen(
       () => {
         if (debounceTimeoutRef.current) {
@@ -302,14 +316,13 @@ export const SimpleEditor = ({ documentId, isPublicRoom = false }: SimpleEditorP
       }
       unsubscribe()
     }
-  }, [sync, updateDocument, documentId, user, isPublicRoom])
-
-  if (!sync || !sync.store) return null
+  }, [store, updateDocument, documentId, user, isPublicRoom])
+  if (!store) return null
 
   return (
     <div style={{ position: 'fixed', inset: 0 }}>
       <Tldraw 
-        store={sync.store} 
+        store={store} 
         components={components}
         user={tldrawUser}
         inferDarkMode 
