@@ -372,7 +372,7 @@ export const useDocuments = (options?: { skipInitialFetch?: boolean }) => {
         throw error
       }
 
-      console.log('Document loaded successfully:', data)
+      
       setCurrentDocument(data)
       return data
     } catch (error: any) {

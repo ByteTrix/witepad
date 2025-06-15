@@ -1,10 +1,10 @@
-import { Tldraw, TLComponents, TLUserPreferences, useTldrawUser, useToasts, DefaultPageMenu } from 'tldraw'
-import { useSyncDemo } from '@tldraw/sync'
+import { Tldraw, TLComponents, TLUserPreferences, useTldrawUser, useToasts, createTLStore, defaultShapeUtils, defaultBindingUtils } from 'tldraw'
 import 'tldraw/tldraw.css'
 import { useEffect, useCallback, useMemo, useState, useRef } from 'react'
 import { useDocuments, Document } from '@/hooks/useDocuments'
 import { useAuth } from '@/contexts/AuthContext'
 import { TopPanel, SharePanel } from './editor/EditorHeader'
+import { usePWA } from '@/hooks/usePWA'
 
 interface SimpleEditorProps {
   documentId?: string
@@ -202,10 +202,13 @@ const CustomPageMenu = ({ documentId, currentDocument, renameDocument }: { docum
 }
 
 export const SimpleEditor = ({ documentId, isPublicRoom = false }: SimpleEditorProps) => {
-  const roomId = documentId || 'default-room'
   const { updateDocument, loadDocument, currentDocument, renameDocument } = useDocuments({ skipInitialFetch: true })
   const { user } = useAuth()
+  const { isOnline } = usePWA()
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
   
   useEffect(() => {
     if (documentId) {
@@ -240,22 +243,57 @@ export const SimpleEditor = ({ documentId, isPublicRoom = false }: SimpleEditorP
         id: user.id,
         name: user.email?.split('@')[0] || 'Anonymous',
       }))
+    }  }, [user, isPublicRoom])
+  
+  // Create a local TLDraw store instead of using useSyncDemo for better performance
+  // This removes unnecessary collaboration overhead since we handle multi-user via Supabase
+  const store = useMemo(() => {
+    return createTLStore({
+      shapeUtils: defaultShapeUtils,
+      bindingUtils: defaultBindingUtils,
+    })
+  }, [])
+
+  // Load document data into store when document is loaded
+  useEffect(() => {
+    if (currentDocument && currentDocument.data && store) {
+      try {
+        const records = JSON.parse(currentDocument.data)
+        if (Array.isArray(records) && records.length > 0) {
+          store.put(records)
+        }
+      } catch (error) {
+        console.error('Error loading document data:', error)
+      }
     }
-  }, [user, isPublicRoom])
-  // Create sync store with user info
-  const sync = useSyncDemo({ roomId, userInfo: userPreferences })
+  }, [currentDocument, store])
 
   // Create tldraw user object
-  const tldrawUser = useTldrawUser({ userPreferences, setUserPreferences })  // Cloud save function (without toast - toast is handled in the KeyboardShortcuts component)
-  const handleCloudSave = useCallback(() => {
-    if (isPublicRoom || !user || !documentId || !sync || !sync.store) return
-    const store = sync.store
-    const allRecords = store.allRecords()
-    updateDocument(documentId, {
-      data: JSON.stringify(allRecords),
-      snapshot: JSON.stringify(allRecords),
-    })
-  }, [user, documentId, sync, updateDocument, isPublicRoom])  // Configure custom UI zones
+  const tldrawUser = useTldrawUser({ userPreferences, setUserPreferences })  
+  
+  // Cloud save function (without toast - toast is handled in the KeyboardShortcuts component)
+  const handleCloudSave = useCallback(async () => {
+    if (isPublicRoom || !user || !documentId || !store) return
+    
+    setIsSaving(true)
+    setHasUnsavedChanges(false)
+    
+    try {
+      const allRecords = store.allRecords()
+      await updateDocument(documentId, {
+        data: JSON.stringify(allRecords),
+        snapshot: JSON.stringify(allRecords),
+      })
+      setLastSaveTime(new Date())
+    } catch (error) {
+      console.error('Error saving to cloud:', error)
+      setHasUnsavedChanges(true)
+    } finally {
+      setIsSaving(false)
+    }
+  }, [user, documentId, store, updateDocument, isPublicRoom])
+
+  // Configure custom UI zones
   const components: TLComponents = useMemo(() => ({
     TopPanel: () => (
       <TopPanelWithShortcuts
@@ -275,41 +313,67 @@ export const SimpleEditor = ({ documentId, isPublicRoom = false }: SimpleEditorP
     PageMenu: () => (
       <CustomPageMenu documentId={documentId} currentDocument={currentDocument} renameDocument={renameDocument} />
     ),
-  }), [documentId, userPreferences, setUserPreferences, handleCloudSave, isPublicRoom, user, currentDocument, renameDocument])
-  // Defensive: Only proceed if sync and sync.store are defined
-  // Only save to cloud for authenticated users with real documents (not public rooms)
+  }), [documentId, userPreferences, setUserPreferences, handleCloudSave, isPublicRoom, user, currentDocument, renameDocument])  
+
+  // Auto-save changes (works offline-first, always saves locally first)
   useEffect(() => {
-    if (isPublicRoom || !user || !documentId || !sync || !sync.store) return
-    const store = sync.store
+    if (isPublicRoom || !user || !documentId || !store) return
+    
     const unsubscribe = store.listen(
       () => {
+        setHasUnsavedChanges(true)
+        
         if (debounceTimeoutRef.current) {
           clearTimeout(debounceTimeoutRef.current)
         }
-        debounceTimeoutRef.current = setTimeout(() => {
+        
+        debounceTimeoutRef.current = setTimeout(async () => {
           const allRecords = store.allRecords()
-          updateDocument(documentId, {
-            data: JSON.stringify(allRecords),
-            snapshot: JSON.stringify(allRecords),
-          })
-        }, 1000) // Increased to 1000ms (1 second) debounce to reduce frequent saves
+          const dataString = JSON.stringify(allRecords)
+          
+          // Always save to local storage first (instant)
+          try {
+            localStorage.setItem(`witepad-doc-${documentId}`, dataString)
+          } catch (error) {
+            console.error('Error saving to localStorage:', error)
+          }
+          
+          // Then try to save to cloud if online
+          if (isOnline) {
+            setIsSaving(true)
+            try {
+              await updateDocument(documentId, {
+                data: dataString,
+                snapshot: dataString,
+              })
+              setLastSaveTime(new Date())
+              setHasUnsavedChanges(false)
+            } catch (error) {
+              console.error('Error saving to cloud:', error)
+              // Keep hasUnsavedChanges true if cloud save fails
+            } finally {
+              setIsSaving(false)
+            }
+          }
+        }, 1000) // 1 second debounce
       },
       { scope: 'document', source: 'user' }
     )
+    
     return () => {
+      unsubscribe()
       if (debounceTimeoutRef.current) {
         clearTimeout(debounceTimeoutRef.current)
       }
-      unsubscribe()
     }
-  }, [sync, updateDocument, documentId, user, isPublicRoom])
-
-  if (!sync || !sync.store) return null
+  }, [store, updateDocument, documentId, user, isPublicRoom, isOnline])
+  
+  if (!store) return null
 
   return (
     <div style={{ position: 'fixed', inset: 0 }}>
       <Tldraw 
-        store={sync.store} 
+        store={store} 
         components={components}
         user={tldrawUser}
         inferDarkMode 
