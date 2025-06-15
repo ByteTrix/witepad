@@ -1,10 +1,11 @@
-import { Tldraw, TLComponents, TLUserPreferences, useTldrawUser, useToasts } from 'tldraw'
+import { Tldraw, TLComponents, TLUserPreferences, useTldrawUser, useToasts, DefaultPageMenu } from 'tldraw'
 import { useSyncDemo } from '@tldraw/sync'
 import 'tldraw/tldraw.css'
-import { useEffect, useCallback, useMemo, useState } from 'react'
+import { useEffect, useCallback, useMemo, useState, useRef } from 'react'
 import { useDocuments } from '@/hooks/useDocuments'
 import { useAuth } from '@/contexts/AuthContext'
 import { TopPanel, SharePanel } from './editor/EditorHeader'
+import { useCustomSync } from '@/hooks/useCustomSync'
 
 interface SimpleEditorProps {
   documentId?: string
@@ -60,6 +61,152 @@ const TopPanelWithShortcuts = ({ onCloudSave, isPublicRoom, hasUser, documentId 
   return <TopPanel documentId={documentId} />
 }
 
+// Custom PageMenu component that shows document name
+const CustomPageMenu = ({ documentId }: { documentId?: string }) => {
+  const { documents, renameDocument } = useDocuments()
+  const [documentName, setDocumentName] = useState('Untitled Document')
+  const [isEditing, setIsEditing] = useState(false)
+  const [tempName, setTempName] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+  
+  // Get document name
+  useEffect(() => {
+    if (documentId) {
+      const currentDoc = documents.find(doc => doc.id === documentId)
+      if (currentDoc) {
+        setDocumentName(currentDoc.name)
+      }
+    }
+  }, [documentId, documents])
+
+  // Focus input when editing starts
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus()
+      inputRef.current.select()
+    }
+  }, [isEditing])
+
+  const handleStartEdit = () => {
+    if (!documentId) return
+    setTempName(documentName)
+    setIsEditing(true)
+  }
+
+  const handleCancelEdit = () => {
+    setIsEditing(false)
+    setTempName('')
+  }
+
+  const handleSaveEdit = async () => {
+    if (!documentId || !tempName.trim()) {
+      handleCancelEdit()
+      return
+    }
+
+    if (tempName.trim() === documentName) {
+      handleCancelEdit()
+      return
+    }
+
+    try {
+      const success = await renameDocument(documentId, tempName.trim())
+      if (success) {
+        setDocumentName(tempName.trim())
+        setIsEditing(false)
+        setTempName('')
+      }
+    } catch (error) {
+      console.error('Error renaming document:', error)
+    }
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      handleSaveEdit()
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      handleCancelEdit()
+    }
+  }
+
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8,
+      fontSize: 14,
+      fontWeight: 500,
+      color: 'var(--color-text)',
+      pointerEvents: 'all'
+    }}>
+      {isEditing ? (
+        <input
+          ref={inputRef}
+          type="text"
+          value={tempName}
+          onChange={(e) => setTempName(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onBlur={handleSaveEdit}
+          style={{
+            background: 'var(--color-background)',
+            border: '1px solid var(--color-border)',
+            borderRadius: 4,
+            padding: '4px 8px',
+            fontSize: 14,
+            fontWeight: 500,
+            color: 'var(--color-text)',
+            outline: 'none',
+            minWidth: '120px'
+          }}
+          placeholder="Document name"
+        />
+      ) : (
+        <>
+          <span 
+            style={{ 
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              maxWidth: '150px'
+            }}
+            title={documentName}
+          >
+            {documentName}
+          </span>
+          <button
+            onClick={handleStartEdit}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: '2px',
+              borderRadius: 2,
+              display: 'flex',
+              alignItems: 'center',
+              color: 'var(--color-text-3)',
+              transition: 'color 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = 'var(--color-text)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'var(--color-text-3)'
+            }}
+            title="Edit document name"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+              <path d="m15 5 4 4"/>
+            </svg>
+          </button>
+        </>
+      )}
+    </div>
+  )
+}
+
 export const SimpleEditor = ({ documentId, isPublicRoom = false }: SimpleEditorProps) => {
   const roomId = documentId || 'default-room'
   const { updateDocument } = useDocuments()
@@ -95,7 +242,6 @@ export const SimpleEditor = ({ documentId, isPublicRoom = false }: SimpleEditorP
       }))
     }
   }, [user, isPublicRoom])
-
   // Create sync store with user info
   const sync = useSyncDemo({ roomId, userInfo: userPreferences })
 
@@ -125,6 +271,9 @@ export const SimpleEditor = ({ documentId, isPublicRoom = false }: SimpleEditorP
         userPreferences={userPreferences}
         setUserPreferences={setUserPreferences}
       />
+    ),
+    PageMenu: () => (
+      <CustomPageMenu documentId={documentId} />
     ),
   }), [documentId, userPreferences, setUserPreferences, handleCloudSave, isPublicRoom, user])
 
