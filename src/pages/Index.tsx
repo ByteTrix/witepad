@@ -1,25 +1,25 @@
 
 import { useAuth } from '@/contexts/AuthContext'
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useDocuments } from '@/hooks/useDocuments'
+import { HeroSection } from '@/components/landing/HeroSection'
 
 const Index = () => {
   const { user, isLoading } = useAuth()
-  const navigate = useNavigate();
+  const navigate = useNavigate()
 
   useEffect(() => {
-    // If not authenticated, redirect to landing page
-    if (!isLoading && !user) {
-      window.location.href = 'http://localhost:3000'
-      return
-    }
-    
     // If authenticated, redirect to documents
     if (user) {
       navigate('/documents')
     }
-  }, [user, isLoading, navigate])
+  }, [user, navigate])
+
+  const handleGetStarted = () => {
+    // This should trigger the authentication flow.
+    // For now, it will just log to the console.
+    console.log('Get Started clicked! Authentication flow can be implemented here.')
+  }
 
   if (isLoading) {
     return (
@@ -35,7 +35,11 @@ const Index = () => {
     )
   }
 
-  // This should not render as users are redirected
+  if (!user) {
+    return <HeroSection onGetStarted={handleGetStarted} />
+  }
+
+  // This should not render as authenticated users are redirected.
   return null
 }
 
