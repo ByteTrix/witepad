@@ -208,6 +208,7 @@ export const SimpleEditor = ({ documentId, isPublicRoom = false }: SimpleEditorP
   const roomId = documentId || 'default-room'
   const { updateDocument, loadDocument, currentDocument, renameDocument } = useDocuments({ skipInitialFetch: true })
   const { user } = useAuth()
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   useEffect(() => {
     if (documentId) {
@@ -286,14 +287,25 @@ export const SimpleEditor = ({ documentId, isPublicRoom = false }: SimpleEditorP
     const store = sync.store
     const unsubscribe = store.listen(
       () => {
-        const allRecords = store.allRecords()
-        updateDocument(documentId, {
-          data: JSON.stringify(allRecords),
-          snapshot: JSON.stringify(allRecords),
-        })      },
-      { scope: 'document' }
+        if (debounceTimeoutRef.current) {
+          clearTimeout(debounceTimeoutRef.current)
+        }
+        debounceTimeoutRef.current = setTimeout(() => {
+          const allRecords = store.allRecords()
+          updateDocument(documentId, {
+            data: JSON.stringify(allRecords),
+            snapshot: JSON.stringify(allRecords),
+          })
+        }, 500) // 500ms debounce
+      },
+      { scope: 'document', source: 'user' }
     )
-    return () => unsubscribe()
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current)
+      }
+      unsubscribe()
+    }
   }, [sync, updateDocument, documentId, user, isPublicRoom])
 
   if (!sync || !sync.store) return null
