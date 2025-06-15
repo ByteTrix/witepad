@@ -209,7 +209,7 @@ const EditorUserAvatar = () => {
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="3"></circle>
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l-.06.06a1.65 1.65 0 0 0-.33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
               </svg>
               Settings
             </button>
@@ -277,30 +277,28 @@ export const TopPanel = ({ documentId }: { documentId?: string }) => {
     <div style={{
       position: 'absolute',
       top: '12px',
-      left: '50%',
-      transform: 'translateX(-50%)',
+      left: '12px',
       zIndex: 200,
       pointerEvents: 'all',
     }}>
       <div style={{ 
         display: 'flex', 
         alignItems: 'center', 
-        gap: 12,
-        padding: '8px 20px', // Increased padding
-        borderRadius: 12, // Increased border radius
+        gap: 8,
+        padding: '6px 12px',
+        borderRadius: 8,
         backgroundColor: 'var(--color-panel)',
         border: '1px solid var(--color-border)',
         boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
         position: 'relative',
-        minHeight: '44px' // Ensure consistent height
       }}>
         <div style={{ position: 'relative' }}>
           <img 
             src="/witepad-logo.png" 
             alt="Witepad" 
             style={{ 
-              height: 32, // Slightly larger
-              width: 32,
+              height: 24,
+              width: 24,
               borderRadius: 3
             }} 
           />
@@ -308,10 +306,10 @@ export const TopPanel = ({ documentId }: { documentId?: string }) => {
           {!isOnline && (
             <div style={{
               position: 'absolute',
-              top: -3,
-              right: -3,
-              width: 8,
-              height: 8,
+              top: -2,
+              right: -2,
+              width: 7,
+              height: 7,
               borderRadius: '50%',
               backgroundColor: '#ef4444',
               border: '2px solid var(--color-panel)',
@@ -322,7 +320,7 @@ export const TopPanel = ({ documentId }: { documentId?: string }) => {
           <span 
           className="font-bold bg-gradient-to-r from-orange-400 to-orange-300 bg-clip-text text-transparent"
           style={{ 
-            fontSize: 16, // Keep same size
+            fontSize: 14,
             letterSpacing: '-0.01em'
           }}        >
           Witepad
