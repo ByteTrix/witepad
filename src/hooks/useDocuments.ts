@@ -242,14 +242,14 @@ export const useDocuments = (options?: { skipInitialFetch?: boolean }) => {
         const updatedDoc = { ...doc, ...updates, updated_at: new Date().toISOString(), synced: false };
         await saveOfflineDoc(updatedDoc);
         setDocuments(prev => prev.map(d => d.id === documentId ? updatedDoc : d));
-        
-        if (currentDocument?.id === documentId) {
+          if (currentDocument?.id === documentId) {
           const updateKeys = Object.keys(updates);
           const isOnlyContentUpdate = updateKeys.length > 0 && updateKeys.every(k => ['data', 'snapshot'].includes(k));
           
           if (!isOnlyContentUpdate) {
             setCurrentDocument(updatedDoc);
           }
+          // For content-only updates, don't trigger currentDocument updates to avoid UI refreshes
         }
         return true;
       }
@@ -271,8 +271,7 @@ export const useDocuments = (options?: { skipInitialFetch?: boolean }) => {
       const newDocData = { ...updates, updated_at: newUpdatedAt, synced: true };
 
       setDocuments(prev =>
-        prev.map(doc => doc.id === documentId ? { ...doc, ...newDocData } : doc)
-      )
+        prev.map(doc => doc.id === documentId ? { ...doc, ...newDocData } : doc)      )
 
       if (currentDocument?.id === documentId) {
         const updateKeys = Object.keys(updates);
@@ -281,6 +280,7 @@ export const useDocuments = (options?: { skipInitialFetch?: boolean }) => {
         if (!isOnlyContentUpdate) {
           setCurrentDocument(prev => prev ? { ...prev, ...newDocData } : null)
         }
+        // For content-only updates, don't trigger currentDocument updates to avoid UI refreshes
       }
 
       return true

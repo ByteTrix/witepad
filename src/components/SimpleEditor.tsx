@@ -62,19 +62,17 @@ const TopPanelWithShortcuts = ({ onCloudSave, isPublicRoom, hasUser, documentId 
 
 // Custom PageMenu component that shows document name
 const CustomPageMenu = ({ documentId, currentDocument, renameDocument }: { documentId?: string, currentDocument: Document | null, renameDocument: (id: string, newName: string) => Promise<boolean> }) => {
-  const [documentName, setDocumentName] = useState('Untitled Document')
   const [isEditing, setIsEditing] = useState(false)
   const [tempName, setTempName] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
   
-  // Get document name
-  useEffect(() => {
+  // Memoize document name to avoid unnecessary re-renders
+  const documentName = useMemo(() => {
     if (currentDocument && currentDocument.id === documentId) {
-      setDocumentName(currentDocument.name)
-    } else {
-      setDocumentName(documentId ? 'Loading...' : 'Untitled Document')
+      return currentDocument.name
     }
-  }, [documentId, currentDocument])
+    return documentId ? 'Loading...' : 'Untitled Document'
+  }, [documentId, currentDocument?.name]) // Only depend on the actual name property
 
   // Focus input when editing starts
   useEffect(() => {
@@ -94,7 +92,6 @@ const CustomPageMenu = ({ documentId, currentDocument, renameDocument }: { docum
     setIsEditing(false)
     setTempName('')
   }
-
   const handleSaveEdit = async () => {
     if (!documentId || !tempName.trim()) {
       handleCancelEdit()
@@ -109,7 +106,7 @@ const CustomPageMenu = ({ documentId, currentDocument, renameDocument }: { docum
     try {
       const success = await renameDocument(documentId, tempName.trim())
       if (success) {
-        setDocumentName(tempName.trim())
+        // Document name will update automatically via memoized value
         setIsEditing(false)
         setTempName('')
       }
@@ -279,7 +276,6 @@ export const SimpleEditor = ({ documentId, isPublicRoom = false }: SimpleEditorP
       <CustomPageMenu documentId={documentId} currentDocument={currentDocument} renameDocument={renameDocument} />
     ),
   }), [documentId, userPreferences, setUserPreferences, handleCloudSave, isPublicRoom, user, currentDocument, renameDocument])
-
   // Defensive: Only proceed if sync and sync.store are defined
   // Only save to cloud for authenticated users with real documents (not public rooms)
   useEffect(() => {
@@ -296,7 +292,7 @@ export const SimpleEditor = ({ documentId, isPublicRoom = false }: SimpleEditorP
             data: JSON.stringify(allRecords),
             snapshot: JSON.stringify(allRecords),
           })
-        }, 500) // 500ms debounce
+        }, 1000) // Increased to 1000ms (1 second) debounce to reduce frequent saves
       },
       { scope: 'document', source: 'user' }
     )

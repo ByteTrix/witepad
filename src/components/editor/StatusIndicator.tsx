@@ -1,4 +1,5 @@
 
+import React from 'react'
 import { Document } from '@/hooks/useDocuments'
 import { Loader2, Wifi, WifiOff, Clock, AlertCircle } from 'lucide-react'
 
@@ -11,7 +12,7 @@ interface StatusIndicatorProps {
   isSaving: boolean
 }
 
-export const StatusIndicator = ({
+export const StatusIndicator = React.memo(({
   isConnected,
   isOffline,
   hasUnsavedChanges,
@@ -74,7 +75,16 @@ export const StatusIndicator = ({
             {currentDocument.name}
           </span>
         </>
-      )}
-    </div>
+      )}    </div>
   )
-}
+}, (prevProps, nextProps) => {
+  // Custom comparison function to prevent unnecessary re-renders
+  return (
+    prevProps.isConnected === nextProps.isConnected &&
+    prevProps.isOffline === nextProps.isOffline &&
+    prevProps.hasUnsavedChanges === nextProps.hasUnsavedChanges &&
+    prevProps.isSaving === nextProps.isSaving &&
+    prevProps.lastSaveTime?.getTime() === nextProps.lastSaveTime?.getTime() &&
+    prevProps.currentDocument?.name === nextProps.currentDocument?.name
+  )
+})
