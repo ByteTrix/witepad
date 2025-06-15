@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { AuthDialog } from './AuthDialog';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { ClickSpark } from '@/components/landing/ClickSpark';
+import { ClickSpark } from '@/components/ui/ClickSpark';
 import { UserAvatar } from './UserAvatar';
 
 export const Header = ({

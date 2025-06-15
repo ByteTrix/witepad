@@ -55,9 +55,9 @@ const useKeyboardShortcuts = (onCloudSave: () => void, isPublicRoom: boolean, ha
 }
 
 // Enhanced TopPanel that includes keyboard shortcuts
-const TopPanelWithShortcuts = ({ onCloudSave, isPublicRoom, hasUser }: any) => {
+const TopPanelWithShortcuts = ({ onCloudSave, isPublicRoom, hasUser, documentId }: any) => {
   useKeyboardShortcuts(onCloudSave, isPublicRoom, hasUser)
-  return <TopPanel />
+  return <TopPanel documentId={documentId} />
 }
 
 export const SimpleEditor = ({ documentId, isPublicRoom = false }: SimpleEditorProps) => {
@@ -109,14 +109,14 @@ export const SimpleEditor = ({ documentId, isPublicRoom = false }: SimpleEditorP
       data: JSON.stringify(allRecords),
       snapshot: JSON.stringify(allRecords),
     })
-  }, [user, documentId, sync, updateDocument, isPublicRoom])
-  // Configure custom UI zones
+  }, [user, documentId, sync, updateDocument, isPublicRoom])  // Configure custom UI zones
   const components: TLComponents = useMemo(() => ({
     TopPanel: () => (
       <TopPanelWithShortcuts
         onCloudSave={handleCloudSave}
         isPublicRoom={isPublicRoom}
         hasUser={!!user}
+        documentId={documentId}
       />
     ),
     SharePanel: () => (

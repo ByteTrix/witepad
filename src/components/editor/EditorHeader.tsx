@@ -14,6 +14,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import { useState, useRef, useEffect } from 'react'
 import { UserAvatar } from '@/components/UserAvatar'
+import { useDocuments } from '@/hooks/useDocuments'
 
 // Editor-themed UserAvatar component that matches the editor UI styling
 const EditorUserAvatar = () => {
@@ -255,9 +256,15 @@ const EditorUserAvatar = () => {
   )
 }
 
-// TopPanel: Clean centered logo and app name
-export const TopPanel = () => {
+// TopPanel: Clean centered logo and app name with document name editor
+export const TopPanel = ({ documentId }: { documentId?: string }) => {
   const [isOnline, setIsOnline] = useState(navigator.onLine)
+  const [isEditingName, setIsEditingName] = useState(false)
+  const [documentName, setDocumentName] = useState('')
+  const [tempName, setTempName] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const { documents, renameDocument, loadDocument } = useDocuments()
+  const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true)
@@ -271,6 +278,84 @@ export const TopPanel = () => {
       window.removeEventListener('offline', handleOffline)
     }
   }, [])
+
+  // Load document name when documentId changes - avoid constant refreshing
+  useEffect(() => {
+    if (documentId) {
+      const currentDoc = documents.find(doc => doc.id === documentId)
+      if (currentDoc && currentDoc.name !== documentName) {
+        setDocumentName(currentDoc.name)
+      } else if (!currentDoc && !documentName) {        // Only fetch if we don't have a name yet
+        const fetchDocumentName = async () => {
+          const doc = await loadDocument(documentId)
+          if (doc) {
+            setDocumentName(doc.name)
+          } else {
+            setDocumentName('Untitled Document')
+          }
+        }
+        fetchDocumentName()
+      }
+    } else if (!documentName) {
+      setDocumentName('Untitled Document')
+    }
+  }, [documentId, documents, loadDocument]) // Removed documentName from dependencies to prevent constant updates
+
+  // Focus input when editing starts
+  useEffect(() => {
+    if (isEditingName && inputRef.current) {
+      inputRef.current.focus()
+      inputRef.current.select()
+    }
+  }, [isEditingName])
+
+  const handleStartEdit = () => {
+    if (!documentId) return
+    setTempName(documentName)
+    setIsEditingName(true)
+  }
+
+  const handleCancelEdit = () => {
+    setIsEditingName(false)
+    setTempName('')
+  }
+
+  const handleSaveEdit = async () => {
+    if (!documentId || !tempName.trim()) {
+      handleCancelEdit()
+      return
+    }
+
+    if (tempName.trim() === documentName) {
+      handleCancelEdit()
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      const success = await renameDocument(documentId, tempName.trim())
+      if (success) {
+        setDocumentName(tempName.trim())
+        setIsEditingName(false)
+        setTempName('')
+        // Remove toast here as it's already handled in the hook
+      }
+    } catch (error) {
+      console.error('Error renaming document:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      handleSaveEdit()
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      handleCancelEdit()
+    }
+  }
 
   return (
     <div style={{ 
@@ -286,21 +371,22 @@ export const TopPanel = () => {
       <div style={{ 
         display: 'flex', 
         alignItems: 'center', 
-        gap: 10,
-        padding: '6px 16px',
-        borderRadius: 8,
+        gap: 12,
+        padding: '8px 20px', // Increased padding
+        borderRadius: 12, // Increased border radius
         backgroundColor: 'var(--color-panel)',
         border: '1px solid var(--color-border)',
         boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
-        position: 'relative'
+        position: 'relative',
+        minHeight: '44px' // Ensure consistent height
       }}>
         <div style={{ position: 'relative' }}>
           <img 
             src="/witepad-logo.png" 
             alt="Witepad" 
             style={{ 
-              height: 30, 
-              width: 30,
+              height: 32, // Slightly larger
+              width: 32,
               borderRadius: 3
             }} 
           />
@@ -319,14 +405,108 @@ export const TopPanel = () => {
             }} />
           )}
         </div>
-        <span style={{ 
-          color: 'var(--color-text)', 
-          fontWeight: 600, 
-          fontSize: 15,
-          letterSpacing: '-0.01em'
-        }}>
+          <span 
+          className="font-bold bg-gradient-to-r from-orange-400 to-orange-300 bg-clip-text text-transparent"
+          style={{ 
+            fontSize: 16, // Keep same size
+            letterSpacing: '-0.01em'
+          }}
+        >
           Witepad
         </span>
+
+        {/* Document name editor */}
+        {documentId && (
+          <>
+            <div style={{ 
+              width: '1px', 
+              height: '24px', // Increased height
+              backgroundColor: 'var(--color-border)', 
+              margin: '0 8px' // Increased margin
+            }} />
+            
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 8, // Increased gap
+              maxWidth: '250px' // Increased max width
+            }}>
+              {isEditingName ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={tempName}
+                    onChange={(e) => setTempName(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    onBlur={handleSaveEdit}
+                    disabled={isLoading}
+                    style={{
+                      background: 'var(--color-background)',
+                      border: '1px solid var(--color-border)',
+                      borderRadius: 6,
+                      padding: '6px 12px', // Increased padding
+                      fontSize: 16, // Match title size
+                      fontWeight: 500,
+                      color: 'var(--color-text)',
+                      width: '200px', // Increased width
+                      outline: 'none',
+                      boxShadow: '0 0 0 2px var(--color-selected)',
+                      opacity: isLoading ? 0.6 : 1
+                    }}
+                    placeholder="Document name"
+                  />
+                  {isLoading && (
+                    <div style={{
+                      width: 14, // Slightly larger
+                      height: 14,
+                      border: '2px solid var(--color-border)',
+                      borderTop: '2px solid var(--color-text)',
+                      borderRadius: '50%',
+                      animation: 'spin 1s linear infinite'
+                    }} />
+                  )}
+                </div>
+              ) : (                <button
+                  onClick={handleStartEdit}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: 16, // Match title size
+                    fontWeight: 500,
+                    color: 'var(--color-text)',
+                    padding: '6px 12px', // Increased padding
+                    borderRadius: 6,
+                    maxWidth: '200px', // Increased max width
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    textAlign: 'left',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6, // Increased gap
+                    transition: 'background-color 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--color-muted)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent'
+                  }}
+                  title={`Click to rename "${documentName}"`}
+                >
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {documentName}
+                  </span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0, opacity: 0.5 }}>
+                    <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+                    <path d="m15 5 4 4"/>
+                  </svg>
+                </button>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   )

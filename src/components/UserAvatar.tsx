@@ -26,7 +26,12 @@ export const UserAvatar = () => {
         <Button variant="ghost" className="relative h-10 w-10 rounded-full">
           <Avatar className="h-10 w-10">
             <AvatarImage src={user.user_metadata?.avatar_url} alt={displayName} />
-            <AvatarFallback className="bg-gradient-to-r from-orange-400 to-orange-500 text-black font-bold">
+            <AvatarFallback 
+              className="text-black font-bold"
+              style={{
+                background: 'linear-gradient(135deg, #f97316, #ea580c)'
+              }}
+            >
               {userInitials}
             </AvatarFallback>
           </Avatar>

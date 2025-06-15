@@ -104,19 +104,20 @@ export const useDocuments = () => {
       const docs = await getAllOfflineDocs(user.id);
       setDocuments(docs);
       return;
-    }
-
-    try {
+    }    try {
       const { data, error } = await supabase
         .from('documents')
         .select('*')
         .order('updated_at', { ascending: false })
 
       if (error) throw error
-      setDocuments(data || [])
+      
+      // Mark server documents as synced
+      const syncedData = (data || []).map(doc => ({ ...doc, synced: true }))
+      setDocuments(syncedData)
       
       // Update local cache with server data
-      setLocalDocuments(data || []);
+      setLocalDocuments(syncedData);
     } catch (error: any) {
       console.error('Error fetching documents:', error)
       toast({
@@ -412,21 +413,17 @@ export const useDocuments = () => {
         .update({ name: newName.trim(), updated_at: new Date().toISOString() })
         .eq('id', id);
 
-      if (error) throw error;
-
-      // Update documents state
+      if (error) throw error;      // Update documents state
       setDocuments(prev => prev.map(doc => 
-        doc.id === id ? { ...doc, name: newName.trim(), updated_at: new Date().toISOString() } : doc
+        doc.id === id ? { ...doc, name: newName.trim(), updated_at: new Date().toISOString(), synced: true } : doc
       ));
 
       // Update current document if it's the one being renamed
       if (currentDocument?.id === id) {
-        setCurrentDocument({ ...currentDocument, name: newName.trim() });
-      }
-
-      toast({
+        setCurrentDocument({ ...currentDocument, name: newName.trim(), synced: true });
+      }      toast({
         title: "Document renamed",
-        description: `Renamed to "${newName}" successfully`
+        description: `Renamed to "${newName}"`
       });
 
       return true;
