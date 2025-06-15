@@ -1,3 +1,4 @@
+
 import { Tldraw, TLComponents, TLUserPreferences, useTldrawUser, useToasts, DefaultPageMenu } from 'tldraw'
 import { useSyncDemo } from '@tldraw/sync'
 import 'tldraw/tldraw.css'
@@ -5,7 +6,6 @@ import { useEffect, useCallback, useMemo, useState, useRef } from 'react'
 import { useDocuments } from '@/hooks/useDocuments'
 import { useAuth } from '@/contexts/AuthContext'
 import { TopPanel, SharePanel } from './editor/EditorHeader'
-import { useCustomSync } from '@/hooks/useCustomSync'
 
 interface SimpleEditorProps {
   documentId?: string
