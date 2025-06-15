@@ -8,19 +8,53 @@
     <meta name="description" content="A modern collaborative drawing and diagramming platform" />
     <meta name="author" content="Witepad" />
     
-    <link rel="icon" href="/placeholder.svg" type="image/png">
+    <link rel="icon" href="/witepad-logo.png" type="image/png">
 
     <meta property="og:title" content="Witepad - Collaborative Drawing Platform" />
     <meta property="og:description" content="A modern collaborative drawing and diagramming platform" />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="/placeholder.svg" />
+    <meta property="og:image" content="/witepad-logo.png" />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@lovable_dev" />
-    <meta name="twitter:image" content="/placeholder.svg" />
+    <meta name="twitter:image" content="/witepad-logo.png" />
+    <style>
+      #loader-wrapper {
+        position: fixed;
+        inset: 0;
+        z-index: 99999;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: #000;
+        transition: opacity 0.5s ease, visibility 0.5s ease;
+      }
+      #loader-wrapper.hidden {
+        opacity: 0;
+        visibility: hidden;
+      }
+      #loader-wrapper .logo {
+        width: 80px;
+        height: 80px;
+        animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+      @keyframes pulse {
+        0%, 100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 0.8;
+          transform: scale(0.95);
+        }
+      }
+    </style>
   </head>
 
   <body>
+    <div id="loader-wrapper">
+      <img src="/witepad-logo.png" alt="Loading..." class="logo" />
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

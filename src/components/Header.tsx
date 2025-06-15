@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -6,7 +5,6 @@ import { AuthDialog } from './AuthDialog';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { ClickSpark } from '@/components/landing/ClickSpark';
 import { UserAvatar } from './UserAvatar';
-import { Loader2 } from 'lucide-react';
 
 export const Header = ({
   flat = false
@@ -69,11 +67,7 @@ export const Header = ({
                           ? 'text-cyan-300 bg-cyan-300/10 border border-cyan-300/20' 
                           : 'text-gray-300 hover:text-white hover:bg-white/5'
                       }`}
-                      disabled={isNavigating}
                     >
-                      {isNavigating && location.hash === item.href ? (
-                        <Loader2 className="mr-2 h-3 w-3 animate-spin inline" />
-                      ) : null}
                       {item.label}
                     </button>
                     : 
@@ -84,11 +78,7 @@ export const Header = ({
                           ? 'text-cyan-300 bg-cyan-300/10 border border-cyan-300/20' 
                           : 'text-gray-300 hover:text-white hover:bg-white/5'
                       }`}
-                      onClick={() => setIsNavigating(true)}
                     >
-                      {isNavigating && location.pathname === item.href ? (
-                        <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                      ) : null}
                       {item.label}
                     </Link>
                   }
