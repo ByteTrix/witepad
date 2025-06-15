@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useMemo, useRef } from 'react'
 import { useDocuments, Document } from '@/hooks/useDocuments'
 import { DocumentsHeader } from '@/components/DocumentsHeader'
@@ -156,66 +157,72 @@ const Documents = () => {
   if (!user) return null
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background/90 to-muted/30 relative overflow-hidden">
-      {/* Animated background elements */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950/50 to-slate-900 relative overflow-hidden">
+      {/* Premium animated background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-1/2 -right-1/2 w-96 h-96 bg-gradient-to-br from-primary/20 to-transparent rounded-full blur-3xl animate-pulse" />
-        <div className="absolute -bottom-1/2 -left-1/2 w-96 h-96 bg-gradient-to-tr from-accent/20 to-transparent rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
+        <div className="absolute -top-1/3 -right-1/3 w-[600px] h-[600px] bg-gradient-to-br from-indigo-500/30 via-purple-500/20 to-pink-500/10 rounded-full blur-3xl animate-pulse opacity-70" />
+        <div className="absolute -bottom-1/3 -left-1/3 w-[600px] h-[600px] bg-gradient-to-tr from-cyan-500/30 via-blue-500/20 to-indigo-500/10 rounded-full blur-3xl animate-pulse opacity-70" style={{ animationDelay: '2s' }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-gradient-to-r from-violet-500/20 to-fuchsia-500/20 rounded-full blur-3xl animate-pulse opacity-50" style={{ animationDelay: '4s' }} />
+        
+        {/* Floating orbs */}
+        <div className="absolute top-20 left-20 w-4 h-4 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full opacity-60 animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-40 right-32 w-3 h-3 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full opacity-60 animate-pulse" style={{ animationDelay: '3s' }} />
+        <div className="absolute bottom-32 left-40 w-5 h-5 bg-gradient-to-r from-violet-400 to-indigo-500 rounded-full opacity-60 animate-pulse" style={{ animationDelay: '5s' }} />
       </div>
       
       <div className="relative z-10">
         <DocumentsHeader />
         <div className="px-6 pt-12 pb-8 max-w-6xl mx-auto">
-          <div className="flex items-center justify-between mb-8 animate-in fade-in-0 slide-in-from-top-4 duration-700">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent">
+          <div className="flex items-center justify-between mb-8 animate-in fade-in-0 slide-in-from-top-4 duration-1000">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-indigo-200 to-cyan-200 bg-clip-text text-transparent drop-shadow-2xl">
               My Documents
             </h1>
             <SyncStatus 
               isSynced={navigator.onLine && documents.every(doc => doc.synced !== false)}
               isLocalOnly={!navigator.onLine}
-              className="bg-background/80 backdrop-blur-sm border border-muted/40 shadow-lg"
+              className="bg-black/40 backdrop-blur-xl border border-white/20 shadow-2xl rounded-2xl"
             />
           </div>
 
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 animate-in fade-in-0 slide-in-from-top-6 duration-700 delay-100">
-            <div className="relative w-full md:w-64">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 animate-in fade-in-0 slide-in-from-top-6 duration-1000 delay-200">
+            <div className="relative w-full md:w-80">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-indigo-300" />
               <Input
                 placeholder="Search documents..."
-                className="pl-10 bg-gradient-to-r from-background/80 to-background/60 backdrop-blur-md border-muted/40 hover:border-primary/30 focus:border-primary/50 transition-all duration-300 shadow-lg hover:shadow-xl"
+                className="pl-12 h-12 bg-black/30 backdrop-blur-xl border-white/20 hover:border-indigo-400/50 focus:border-cyan-400/70 transition-all duration-500 shadow-2xl hover:shadow-indigo-500/25 focus:shadow-cyan-500/25 text-white placeholder:text-indigo-200 rounded-2xl"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
             
-            <div className="flex items-center gap-3 w-full md:w-auto">
+            <div className="flex items-center gap-4 w-full md:w-auto">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="text-sm bg-gradient-to-r from-background/80 to-background/60 backdrop-blur-md border-muted/40 hover:border-primary/30 hover:bg-primary/5 transition-all duration-300 shadow-lg hover:shadow-xl">
-                    {sortOrder === 'newest' && <Clock className="mr-2 h-4 w-4" />}
-                    {sortOrder === 'oldest' && <Clock className="mr-2 h-4 w-4" />}
-                    {sortOrder === 'a-z' && <ArrowDownAZ className="mr-2 h-4 w-4" />}
-                    {sortOrder === 'z-a' && <ArrowUpZA className="mr-2 h-4 w-4" />}
+                  <Button variant="outline" size="lg" className="text-sm bg-black/30 backdrop-blur-xl border-white/20 hover:border-indigo-400/50 hover:bg-indigo-500/20 transition-all duration-500 shadow-2xl hover:shadow-indigo-500/25 text-white rounded-2xl h-12">
+                    {sortOrder === 'newest' && <Clock className="mr-3 h-5 w-5" />}
+                    {sortOrder === 'oldest' && <Clock className="mr-3 h-5 w-5" />}
+                    {sortOrder === 'a-z' && <ArrowDownAZ className="mr-3 h-5 w-5" />}
+                    {sortOrder === 'z-a' && <ArrowUpZA className="mr-3 h-5 w-5" />}
                     Sort: {sortOrder === 'newest' ? 'Newest' : 
                            sortOrder === 'oldest' ? 'Oldest' : 
                            sortOrder === 'a-z' ? 'A to Z' : 'Z to A'}
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="bg-gradient-to-br from-background to-muted/10 backdrop-blur-md border-muted/40 shadow-xl">
-                  <DropdownMenuItem onClick={() => setSortOrder('newest')} className="hover:bg-primary/10 transition-colors duration-200">
-                    <Clock className="mr-2 h-4 w-4" />
+                <DropdownMenuContent align="end" className="bg-black/60 backdrop-blur-xl border-white/20 shadow-2xl rounded-2xl">
+                  <DropdownMenuItem onClick={() => setSortOrder('newest')} className="hover:bg-indigo-500/30 transition-colors duration-300 text-white rounded-xl">
+                    <Clock className="mr-3 h-5 w-5" />
                     Newest
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setSortOrder('oldest')} className="hover:bg-primary/10 transition-colors duration-200">
-                    <Clock className="mr-2 h-4 w-4" />
+                  <DropdownMenuItem onClick={() => setSortOrder('oldest')} className="hover:bg-indigo-500/30 transition-colors duration-300 text-white rounded-xl">
+                    <Clock className="mr-3 h-5 w-5" />
                     Oldest
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setSortOrder('a-z')} className="hover:bg-primary/10 transition-colors duration-200">
-                    <ArrowDownAZ className="mr-2 h-4 w-4" />
+                  <DropdownMenuItem onClick={() => setSortOrder('a-z')} className="hover:bg-indigo-500/30 transition-colors duration-300 text-white rounded-xl">
+                    <ArrowDownAZ className="mr-3 h-5 w-5" />
                     A to Z
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setSortOrder('z-a')} className="hover:bg-primary/10 transition-colors duration-200">
-                    <ArrowUpZA className="mr-2 h-4 w-4" />
+                  <DropdownMenuItem onClick={() => setSortOrder('z-a')} className="hover:bg-indigo-500/30 transition-colors duration-300 text-white rounded-xl">
+                    <ArrowUpZA className="mr-3 h-5 w-5" />
                     Z to A
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -225,9 +232,9 @@ const Documents = () => {
                 size="icon" 
                 onClick={handleRefresh}
                 disabled={isRefreshing || isLoading}
-                className={`bg-gradient-to-r from-background/80 to-background/60 backdrop-blur-md border border-muted/40 hover:border-primary/30 hover:bg-primary/5 transition-all duration-300 shadow-lg hover:shadow-xl ${isRefreshing ? 'animate-spin' : 'hover:scale-105'}`}
+                className={`bg-black/30 backdrop-blur-xl border border-white/20 hover:border-indigo-400/50 hover:bg-indigo-500/20 transition-all duration-500 shadow-2xl hover:shadow-indigo-500/25 text-white rounded-2xl h-12 w-12 ${isRefreshing ? 'animate-spin' : 'hover:scale-110'}`}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
                   <path d="M3 3v5h5" />
                   <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
@@ -238,42 +245,42 @@ const Documents = () => {
           </div>
 
           {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in-0 duration-500">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-in fade-in-0 duration-700">
               {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="border border-muted/40 rounded-xl p-6 space-y-4 bg-gradient-to-br from-background/80 to-muted/20 backdrop-blur-sm shadow-lg animate-pulse">
-                  <Skeleton className="h-6 w-3/4 bg-gradient-to-r from-muted/50 to-muted/30" />
-                  <Skeleton className="h-4 w-1/2 bg-gradient-to-r from-muted/50 to-muted/30" />
-                  <div className="pt-4">
-                    <Skeleton className="h-10 w-full bg-gradient-to-r from-muted/50 to-muted/30" />
+                <div key={i} className="border border-white/20 rounded-3xl p-8 space-y-6 bg-black/30 backdrop-blur-xl shadow-2xl animate-pulse">
+                  <Skeleton className="h-8 w-3/4 bg-gradient-to-r from-indigo-400/30 to-purple-400/30 rounded-2xl" />
+                  <Skeleton className="h-6 w-1/2 bg-gradient-to-r from-cyan-400/30 to-blue-400/30 rounded-2xl" />
+                  <div className="pt-6">
+                    <Skeleton className="h-12 w-full bg-gradient-to-r from-violet-400/30 to-pink-400/30 rounded-2xl" />
                   </div>
                 </div>
               ))}
             </div>
           ) : filteredAndSortedDocuments.length === 0 ? (
-            <div className="text-center py-16 space-y-4 animate-in fade-in-0 slide-in-from-bottom-4 duration-700">
+            <div className="text-center py-20 space-y-6 animate-in fade-in-0 slide-in-from-bottom-4 duration-1000">
               {searchQuery ? (
                 <>
-                  <div className="w-16 h-16 mx-auto bg-gradient-to-br from-muted/80 to-muted/40 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm">
-                    <Search className="h-8 w-8 text-muted-foreground" />
+                  <div className="w-20 h-20 mx-auto bg-gradient-to-br from-indigo-500/40 to-purple-500/40 rounded-full flex items-center justify-center shadow-2xl backdrop-blur-xl border border-white/20">
+                    <Search className="h-10 w-10 text-indigo-200" />
                   </div>
-                  <h2 className="text-xl font-medium bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">No matching documents</h2>
-                  <p className="text-muted-foreground">Try a different search term</p>
-                  <Button variant="outline" onClick={() => setSearchQuery('')} className="mt-4 bg-gradient-to-r from-background/80 to-background/60 backdrop-blur-sm border-muted/40 hover:border-primary/30 hover:bg-primary/5 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105">
+                  <h2 className="text-2xl font-medium bg-gradient-to-r from-white to-indigo-200 bg-clip-text text-transparent">No matching documents</h2>
+                  <p className="text-indigo-300">Try a different search term</p>
+                  <Button variant="outline" onClick={() => setSearchQuery('')} className="mt-6 bg-black/30 backdrop-blur-xl border-white/20 hover:border-indigo-400/50 hover:bg-indigo-500/20 transition-all duration-500 shadow-2xl hover:shadow-indigo-500/25 hover:scale-105 text-white rounded-2xl h-12">
                     Clear Search
                   </Button>
                 </>
               ) : (
                 <>
-                  <div className="w-16 h-16 mx-auto bg-gradient-to-br from-primary/30 to-primary/10 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm">
-                    <FileText className="h-8 w-8 text-primary" />
+                  <div className="w-20 h-20 mx-auto bg-gradient-to-br from-cyan-500/40 to-indigo-500/40 rounded-full flex items-center justify-center shadow-2xl backdrop-blur-xl border border-white/20">
+                    <FileText className="h-10 w-10 text-cyan-200" />
                   </div>
-                  <h2 className="text-xl font-medium bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">No documents yet</h2>
-                  <p className="text-muted-foreground">Create your first document to get started</p>
-                  <Button onClick={handleCreateDocument} className="mt-4 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 border-0" disabled={isCreating}>
+                  <h2 className="text-2xl font-medium bg-gradient-to-r from-white to-cyan-200 bg-clip-text text-transparent">No documents yet</h2>
+                  <p className="text-cyan-300">Create your first document to get started</p>
+                  <Button onClick={handleCreateDocument} className="mt-6 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 shadow-2xl hover:shadow-indigo-500/50 transition-all duration-500 hover:scale-105 border-0 text-white rounded-2xl h-12" disabled={isCreating}>
                     {isCreating ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="mr-3 h-5 w-5 animate-spin" />
                     ) : (
-                      <Plus className="mr-2 h-4 w-4" />
+                      <Plus className="mr-3 h-5 w-5" />
                     )}
                     Create Document
                   </Button>
@@ -281,73 +288,73 @@ const Documents = () => {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredAndSortedDocuments.map((doc: Document, index) => (
                 <div
                   key={doc.id}
                   onClick={() => handleOpenDocument(doc.id)}
-                  className="border border-muted/30 rounded-xl p-6 hover:shadow-2xl hover:shadow-primary/20 transition-all duration-500 cursor-pointer group space-y-2 relative bg-gradient-to-br from-background/90 via-background/80 to-muted/10 backdrop-blur-sm hover:scale-[1.02] hover:border-primary/40 animate-in fade-in-0 slide-in-from-bottom-4 hover:bg-gradient-to-br hover:from-background/95 hover:via-background/90 hover:to-primary/5"
+                  className="border border-white/20 rounded-3xl p-8 hover:shadow-2xl hover:shadow-indigo-500/30 transition-all duration-700 cursor-pointer group space-y-4 relative bg-black/30 backdrop-blur-xl hover:scale-105 hover:border-indigo-400/50 animate-in fade-in-0 slide-in-from-bottom-4 hover:bg-black/40"
                   style={{
-                    animationDelay: `${index * 100}ms`,
-                    animationDuration: '700ms'
+                    animationDelay: `${index * 150}ms`,
+                    animationDuration: '1000ms'
                   }}
                 >
-                  {/* Gradient overlay on hover */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-xl pointer-events-none" />
+                  {/* Premium gradient overlay on hover */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-purple-500/10 to-cyan-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700 rounded-3xl pointer-events-none" />
                   
                   <div className="flex items-start justify-between relative z-10">
                     {renamingId === doc.id ? (
-                      <div className="flex items-center w-full space-x-2" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center w-full space-x-3" onClick={(e) => e.stopPropagation()}>
                         <Input 
                           ref={inputRef}
                           value={newName} 
                           onChange={(e) => setNewName(e.target.value)}
                           onKeyDown={(e) => handleRenameKeyDown(doc.id, e)}
-                          className="h-8 text-lg font-medium bg-gradient-to-r from-background/80 to-background/60 backdrop-blur-sm border-muted/40 focus:border-primary/50 transition-all duration-300 shadow-lg"
+                          className="h-10 text-lg font-medium bg-black/40 backdrop-blur-xl border-white/30 focus:border-cyan-400/70 transition-all duration-500 shadow-xl text-white rounded-2xl"
                           placeholder="Document name"
                         />
-                        <div className="flex space-x-1">
+                        <div className="flex space-x-2">
                           <Button 
                             size="icon" 
                             variant="ghost" 
-                            className="h-8 w-8 hover:bg-green-500/20 hover:text-green-600 transition-all duration-300 shadow-lg hover:scale-110"
+                            className="h-10 w-10 hover:bg-green-500/30 hover:text-green-300 transition-all duration-500 shadow-xl hover:scale-110 rounded-2xl"
                             onClick={(e) => handleSubmitRename(doc.id, e)}
                           >
-                            <Check className="h-4 w-4" />
+                            <Check className="h-5 w-5" />
                           </Button>
                           <Button 
                             size="icon" 
                             variant="ghost" 
-                            className="h-8 w-8 hover:bg-red-500/20 hover:text-red-600 transition-all duration-300 shadow-lg hover:scale-110"
+                            className="h-10 w-10 hover:bg-red-500/30 hover:text-red-300 transition-all duration-500 shadow-xl hover:scale-110 rounded-2xl"
                             onClick={handleCancelRename}
                           >
-                            <X className="h-4 w-4" />
+                            <X className="h-5 w-5" />
                           </Button>
                         </div>
                       </div>
                     ) : (
-                      <h3 className="text-lg font-medium truncate group-hover:text-primary transition-all duration-300 flex-1 bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent group-hover:from-primary group-hover:to-primary/80">
+                      <h3 className="text-xl font-semibold truncate group-hover:text-cyan-200 transition-all duration-500 flex-1 bg-gradient-to-r from-white to-indigo-200 bg-clip-text text-transparent group-hover:from-cyan-200 group-hover:to-indigo-200">
                         {doc.name}
                       </h3>
                     )}
                     {doc.id.startsWith('temp-') && (
-                      <span className="text-xs px-2 py-1 bg-gradient-to-r from-yellow-400/30 to-yellow-500/30 text-yellow-600 rounded-full border border-yellow-400/40 backdrop-blur-sm shadow-lg">Offline</span>
+                      <span className="text-xs px-3 py-2 bg-gradient-to-r from-amber-400/40 to-orange-500/40 text-amber-200 rounded-full border border-amber-400/50 backdrop-blur-xl shadow-xl">Offline</span>
                     )}
                     {!doc.synced && !doc.id.startsWith('temp-') && (
-                      <span className="text-xs px-2 py-1 bg-gradient-to-r from-blue-400/30 to-blue-500/30 text-blue-600 rounded-full border border-blue-400/40 backdrop-blur-sm ml-2 shadow-lg">Not synced</span>
+                      <span className="text-xs px-3 py-2 bg-gradient-to-r from-blue-400/40 to-cyan-500/40 text-blue-200 rounded-full border border-blue-400/50 backdrop-blur-xl ml-3 shadow-xl">Not synced</span>
                     )}
                   </div>
-                  <p className="text-sm text-muted-foreground flex items-center group-hover:text-muted-foreground/80 transition-colors duration-300 relative z-10">
-                    <Calendar className="h-3.5 w-3.5 mr-2 opacity-70" />
+                  <p className="text-sm text-indigo-300 flex items-center group-hover:text-cyan-300 transition-colors duration-500 relative z-10">
+                    <Calendar className="h-4 w-4 mr-3 opacity-70" />
                     {formatDistanceToNow(new Date(doc.updated_at), { addSuffix: true })}
                   </p>
-                  <div className="pt-4 flex justify-end space-x-2 relative z-10">
+                  <div className="pt-6 flex justify-end space-x-3 relative z-10">
                     {!renamingId && (
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={(e) => handleStartRename(doc, e)}
-                        className="opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-105 bg-gradient-to-r from-background/80 to-background/60 backdrop-blur-sm border-muted/40 hover:border-primary/30 hover:bg-primary/5 shadow-lg hover:shadow-xl"
+                        className="opacity-0 group-hover:opacity-100 transition-all duration-500 hover:scale-110 bg-black/40 backdrop-blur-xl border-white/30 hover:border-indigo-400/50 hover:bg-indigo-500/30 shadow-xl hover:shadow-indigo-500/30 text-white rounded-2xl"
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -357,7 +364,7 @@ const Documents = () => {
                       size="sm"
                       onClick={(e) => handleDeleteDocument(doc.id, e)}
                       disabled={deletingId === doc.id}
-                      className="opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-105 bg-gradient-to-r from-red-500/80 to-red-600/80 hover:from-red-500 hover:to-red-600 shadow-lg hover:shadow-xl border-0"
+                      className="opacity-0 group-hover:opacity-100 transition-all duration-500 hover:scale-110 bg-gradient-to-r from-red-500/80 to-pink-600/80 hover:from-red-500 hover:to-pink-600 shadow-xl hover:shadow-red-500/30 border-0 text-white rounded-2xl"
                     >
                       {deletingId === doc.id ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
