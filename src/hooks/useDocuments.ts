@@ -26,7 +26,7 @@ export interface Document {
   isRenaming?: boolean // used for UI state management
 }
 
-export const useDocuments = () => {
+export const useDocuments = (options?: { skipInitialFetch?: boolean }) => {
   const { user } = useAuth()
   const [documents, setDocuments] = useState<Document[]>([])
   const [currentDocument, setCurrentDocument] = useState<Document | null>(null)
@@ -324,7 +324,7 @@ export const useDocuments = () => {
     }
   }
   // Load specific document
-  const loadDocument = async (documentId: string) => {
+  const loadDocument = useCallback(async (documentId: string) => {
     if (!user) return null;
     if (!navigator.onLine || isOffline || documentId.startsWith('temp-')) {
       const doc = await getOfflineDoc(documentId);
@@ -368,7 +368,7 @@ export const useDocuments = () => {
       })
       return null
     }
-  }
+  }, [user, isOffline])
 
   // Rename document
   const renameDocument = async (id: string, newName: string) => {
@@ -493,14 +493,14 @@ export const useDocuments = () => {
 
   // Only fetch documents when user changes and prevent multiple calls
   useEffect(() => {
-    if (user && !fetchingRef.current) {
+    if (user && !fetchingRef.current && !options?.skipInitialFetch) {
       fetchDocuments()
     } else if (!user) {
       setDocuments([])
       setCurrentDocument(null)
       setIsLoading(false)
     }
-  }, [user]) // Remove fetchDocuments from dependencies to prevent loops
+  }, [user, options?.skipInitialFetch, fetchDocuments])
 
   return {
     documents,

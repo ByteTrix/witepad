@@ -1,9 +1,8 @@
-
 import { Tldraw, TLComponents, TLUserPreferences, useTldrawUser, useToasts, DefaultPageMenu } from 'tldraw'
 import { useSyncDemo } from '@tldraw/sync'
 import 'tldraw/tldraw.css'
 import { useEffect, useCallback, useMemo, useState, useRef } from 'react'
-import { useDocuments } from '@/hooks/useDocuments'
+import { useDocuments, Document } from '@/hooks/useDocuments'
 import { useAuth } from '@/contexts/AuthContext'
 import { TopPanel, SharePanel } from './editor/EditorHeader'
 
@@ -62,8 +61,7 @@ const TopPanelWithShortcuts = ({ onCloudSave, isPublicRoom, hasUser, documentId 
 }
 
 // Custom PageMenu component that shows document name
-const CustomPageMenu = ({ documentId }: { documentId?: string }) => {
-  const { documents, renameDocument } = useDocuments()
+const CustomPageMenu = ({ documentId, currentDocument, renameDocument }: { documentId?: string, currentDocument: Document | null, renameDocument: (id: string, newName: string) => Promise<boolean> }) => {
   const [documentName, setDocumentName] = useState('Untitled Document')
   const [isEditing, setIsEditing] = useState(false)
   const [tempName, setTempName] = useState('')
@@ -71,13 +69,12 @@ const CustomPageMenu = ({ documentId }: { documentId?: string }) => {
   
   // Get document name
   useEffect(() => {
-    if (documentId) {
-      const currentDoc = documents.find(doc => doc.id === documentId)
-      if (currentDoc) {
-        setDocumentName(currentDoc.name)
-      }
+    if (currentDocument && currentDocument.id === documentId) {
+      setDocumentName(currentDocument.name)
+    } else {
+      setDocumentName(documentId ? 'Loading...' : 'Untitled Document')
     }
-  }, [documentId, documents])
+  }, [documentId, currentDocument])
 
   // Focus input when editing starts
   useEffect(() => {
@@ -209,10 +206,9 @@ const CustomPageMenu = ({ documentId }: { documentId?: string }) => {
 
 export const SimpleEditor = ({ documentId, isPublicRoom = false }: SimpleEditorProps) => {
   const roomId = documentId || 'default-room'
-  const { updateDocument } = useDocuments()
+  const { updateDocument, loadDocument, currentDocument, renameDocument } = useDocuments({ skipInitialFetch: true })
   const { user } = useAuth()
   
-  // ...existing code...
   // Create user preferences with custom user data
   const [userPreferences, setUserPreferences] = useState<TLUserPreferences>(() => {
     if (isPublicRoom && !user) {
@@ -273,9 +269,9 @@ export const SimpleEditor = ({ documentId, isPublicRoom = false }: SimpleEditorP
       />
     ),
     PageMenu: () => (
-      <CustomPageMenu documentId={documentId} />
+      <CustomPageMenu documentId={documentId} currentDocument={currentDocument} renameDocument={renameDocument} />
     ),
-  }), [documentId, userPreferences, setUserPreferences, handleCloudSave, isPublicRoom, user])
+  }), [documentId, userPreferences, setUserPreferences, handleCloudSave, isPublicRoom, user, currentDocument, renameDocument])
 
   // Defensive: Only proceed if sync and sync.store are defined
   // Only save to cloud for authenticated users with real documents (not public rooms)
