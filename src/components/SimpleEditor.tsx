@@ -4,7 +4,6 @@ import { useEffect, useCallback, useMemo, useState, useRef } from 'react'
 import { useDocuments, Document } from '@/hooks/useDocuments'
 import { useAuth } from '@/contexts/AuthContext'
 import { TopPanel, SharePanel } from './editor/EditorHeader'
-import { StatusIndicator } from './editor/StatusIndicator'
 import { usePWA } from '@/hooks/usePWA'
 
 interface SimpleEditorProps {
@@ -378,14 +377,6 @@ export const SimpleEditor = ({ documentId, isPublicRoom = false }: SimpleEditorP
         components={components}
         user={tldrawUser}
         inferDarkMode 
-      />
-      <StatusIndicator
-        isConnected={isOnline}
-        isOffline={!isOnline}
-        hasUnsavedChanges={hasUnsavedChanges}
-        lastSaveTime={lastSaveTime}
-        currentDocument={currentDocument}
-        isSaving={isSaving}
       />
     </div>
   )
