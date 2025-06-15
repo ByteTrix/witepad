@@ -481,6 +481,7 @@ export const useDocuments = () => {
     deleteDocument,
     loadDocument,
     fetchDocuments,
-    renameDocument
+    renameDocument,
+    isOffline,
   }
 }
