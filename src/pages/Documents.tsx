@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from 'react'
 import { useDocuments, Document } from '@/hooks/useDocuments'
-import { Header } from '@/components/Header'
+import { DocumentsHeader } from '@/components/DocumentsHeader'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { FileText, Plus, Trash2, Calendar, Search, ArrowDownAZ, ArrowUpZA, Clock, Loader2, Edit, Check, X } from 'lucide-react'
@@ -156,22 +156,10 @@ const Documents = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
-      <div className="pt-20 px-6 max-w-6xl mx-auto">
+      <DocumentsHeader />
+      <div className="px-6 py-8 max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold">My Documents</h1>
-          <Button 
-            onClick={handleCreateDocument} 
-            className="bg-gradient-to-r from-primary to-purple-600"
-            disabled={isCreating}
-          >
-            {isCreating ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Plus className="mr-2 h-4 w-4" />
-            )}
-            New Document
-          </Button>
         </div>
 
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">

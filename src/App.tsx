@@ -12,6 +12,7 @@ import Documents from "./pages/Documents";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import Editor from "./pages/Editor";
+import Pricing from "./pages/Pricing";
 
 const queryClient = new QueryClient();
 
@@ -22,8 +23,10 @@ const App = () => (
         <ThemeProvider>
           <ImprovedToaster />
           <Sonner />
-          <BrowserRouter>            <Routes>
+          <BrowserRouter>
+            <Routes>
               <Route path="/" element={<Index />} />
+              <Route path="/pricing" element={<Pricing />} />
               <Route path="/documents" element={<Documents />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/settings" element={<Settings />} />
