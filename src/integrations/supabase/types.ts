@@ -81,6 +81,9 @@ export type Database = {
           is_public: boolean | null
           name: string
           owner_id: string
+          shared_link_enabled: boolean | null
+          shared_link_id: string | null
+          shared_link_type: string | null
           snapshot: Json | null
           updated_at: string | null
         }
@@ -91,6 +94,9 @@ export type Database = {
           is_public?: boolean | null
           name?: string
           owner_id: string
+          shared_link_enabled?: boolean | null
+          shared_link_id?: string | null
+          shared_link_type?: string | null
           snapshot?: Json | null
           updated_at?: string | null
         }
@@ -101,6 +107,9 @@ export type Database = {
           is_public?: boolean | null
           name?: string
           owner_id?: string
+          shared_link_enabled?: boolean | null
+          shared_link_id?: string | null
+          shared_link_type?: string | null
           snapshot?: Json | null
           updated_at?: string | null
         }
@@ -138,6 +147,30 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      disable_document_sharing: {
+        Args: { doc_id: string }
+        Returns: undefined
+      }
+      enable_document_sharing: {
+        Args: { doc_id: string; link_type?: string }
+        Returns: string
+      }
+      generate_share_link_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      get_document_by_share_link: {
+        Args: { link_id: string }
+        Returns: {
+          id: string
+          name: string
+          owner_id: string
+          is_public: boolean
+          shared_link_type: string
+          created_at: string
+          updated_at: string
+        }[]
+      }
       user_can_access_document: {
         Args: { doc_id: string; user_id: string }
         Returns: boolean

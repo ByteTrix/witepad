@@ -1,9 +1,8 @@
-
 import { Tldraw, TLComponents, TLUserPreferences, useTldrawUser, useToasts, DefaultPageMenu } from 'tldraw'
 import { useSyncDemo } from '@tldraw/sync'
 import 'tldraw/tldraw.css'
 import { useEffect, useCallback, useMemo, useState, useRef } from 'react'
-import { useDocuments } from '@/hooks/useDocuments'
+import { useDocuments, Document } from '@/hooks/useDocuments'
 import { useAuth } from '@/contexts/AuthContext'
 import { TopPanel, SharePanel } from './editor/EditorHeader'
 
@@ -62,22 +61,18 @@ const TopPanelWithShortcuts = ({ onCloudSave, isPublicRoom, hasUser, documentId 
 }
 
 // Custom PageMenu component that shows document name
-const CustomPageMenu = ({ documentId }: { documentId?: string }) => {
-  const { documents, renameDocument } = useDocuments()
-  const [documentName, setDocumentName] = useState('Untitled Document')
+const CustomPageMenu = ({ documentId, currentDocument, renameDocument }: { documentId?: string, currentDocument: Document | null, renameDocument: (id: string, newName: string) => Promise<boolean> }) => {
   const [isEditing, setIsEditing] = useState(false)
   const [tempName, setTempName] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
   
-  // Get document name
-  useEffect(() => {
-    if (documentId) {
-      const currentDoc = documents.find(doc => doc.id === documentId)
-      if (currentDoc) {
-        setDocumentName(currentDoc.name)
-      }
+  // Memoize document name to avoid unnecessary re-renders
+  const documentName = useMemo(() => {
+    if (currentDocument && currentDocument.id === documentId) {
+      return currentDocument.name
     }
-  }, [documentId, documents])
+    return documentId ? 'Loading...' : 'Untitled Document'
+  }, [documentId, currentDocument?.name]) // Only depend on the actual name property
 
   // Focus input when editing starts
   useEffect(() => {
@@ -97,7 +92,6 @@ const CustomPageMenu = ({ documentId }: { documentId?: string }) => {
     setIsEditing(false)
     setTempName('')
   }
-
   const handleSaveEdit = async () => {
     if (!documentId || !tempName.trim()) {
       handleCancelEdit()
@@ -112,7 +106,7 @@ const CustomPageMenu = ({ documentId }: { documentId?: string }) => {
     try {
       const success = await renameDocument(documentId, tempName.trim())
       if (success) {
-        setDocumentName(tempName.trim())
+        // Document name will update automatically via memoized value
         setIsEditing(false)
         setTempName('')
       }
@@ -209,10 +203,16 @@ const CustomPageMenu = ({ documentId }: { documentId?: string }) => {
 
 export const SimpleEditor = ({ documentId, isPublicRoom = false }: SimpleEditorProps) => {
   const roomId = documentId || 'default-room'
-  const { updateDocument } = useDocuments()
+  const { updateDocument, loadDocument, currentDocument, renameDocument } = useDocuments({ skipInitialFetch: true })
   const { user } = useAuth()
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
-  // ...existing code...
+  useEffect(() => {
+    if (documentId) {
+      loadDocument(documentId)
+    }
+  }, [documentId, loadDocument])
+
   // Create user preferences with custom user data
   const [userPreferences, setUserPreferences] = useState<TLUserPreferences>(() => {
     if (isPublicRoom && !user) {
@@ -273,10 +273,9 @@ export const SimpleEditor = ({ documentId, isPublicRoom = false }: SimpleEditorP
       />
     ),
     PageMenu: () => (
-      <CustomPageMenu documentId={documentId} />
+      <CustomPageMenu documentId={documentId} currentDocument={currentDocument} renameDocument={renameDocument} />
     ),
-  }), [documentId, userPreferences, setUserPreferences, handleCloudSave, isPublicRoom, user])
-
+  }), [documentId, userPreferences, setUserPreferences, handleCloudSave, isPublicRoom, user, currentDocument, renameDocument])
   // Defensive: Only proceed if sync and sync.store are defined
   // Only save to cloud for authenticated users with real documents (not public rooms)
   useEffect(() => {
@@ -284,14 +283,25 @@ export const SimpleEditor = ({ documentId, isPublicRoom = false }: SimpleEditorP
     const store = sync.store
     const unsubscribe = store.listen(
       () => {
-        const allRecords = store.allRecords()
-        updateDocument(documentId, {
-          data: JSON.stringify(allRecords),
-          snapshot: JSON.stringify(allRecords),
-        })      },
-      { scope: 'document' }
+        if (debounceTimeoutRef.current) {
+          clearTimeout(debounceTimeoutRef.current)
+        }
+        debounceTimeoutRef.current = setTimeout(() => {
+          const allRecords = store.allRecords()
+          updateDocument(documentId, {
+            data: JSON.stringify(allRecords),
+            snapshot: JSON.stringify(allRecords),
+          })
+        }, 1000) // Increased to 1000ms (1 second) debounce to reduce frequent saves
+      },
+      { scope: 'document', source: 'user' }
     )
-    return () => unsubscribe()
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current)
+      }
+      unsubscribe()
+    }
   }, [sync, updateDocument, documentId, user, isPublicRoom])
 
   if (!sync || !sync.store) return null

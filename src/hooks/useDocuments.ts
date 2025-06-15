@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from '@/components/ui/use-toast'
@@ -26,20 +26,27 @@ export interface Document {
   isRenaming?: boolean // used for UI state management
 }
 
-export const useDocuments = () => {
+export const useDocuments = (options?: { skipInitialFetch?: boolean }) => {
   const { user } = useAuth()
   const [documents, setDocuments] = useState<Document[]>([])
   const [currentDocument, setCurrentDocument] = useState<Document | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isOffline, setIsOffline] = useState(false)
   const [localDocuments, setLocalDocuments] = useState<Document[]>([])
+  
+  // Add refs to prevent multiple simultaneous requests
+  const fetchingRef = useRef(false)
+  const lastFetchRef = useRef<number>(0)
 
   // Check online status
   useEffect(() => {
     const handleOnline = () => {
       setIsOffline(false);
       console.log('Back online, syncing documents...');
-      fetchDocuments();
+      // Only fetch if we haven't fetched recently
+      if (Date.now() - lastFetchRef.current > 5000) {
+        fetchDocuments();
+      }
     };
 
     const handleOffline = () => {
@@ -94,17 +101,34 @@ export const useDocuments = () => {
     }
   }, [user, localDocuments]);
 
-  // Fetch user's documents
-  const fetchDocuments = async () => {
-    if (!user) return;
+  // Memoized fetch function with debouncing
+  const fetchDocuments = useCallback(async () => {
+    if (!user || fetchingRef.current) return;
+    
+    // Prevent multiple simultaneous requests
+    if (Date.now() - lastFetchRef.current < 1000) {
+      console.log('Skipping fetch - too recent');
+      return;
+    }
+    
+    fetchingRef.current = true;
+    lastFetchRef.current = Date.now();
+    
     if (!navigator.onLine) {
       setIsOffline(true);
       setIsLoading(false);
       // Load from IndexedDB
-      const docs = await getAllOfflineDocs(user.id);
-      setDocuments(docs);
+      try {
+        const docs = await getAllOfflineDocs(user.id);
+        setDocuments(docs);
+      } catch (error) {
+        console.error('Error loading offline documents:', error);
+      }
+      fetchingRef.current = false;
       return;
-    }    try {
+    }
+
+    try {
       const { data, error } = await supabase
         .from('documents')
         .select('*')
@@ -132,8 +156,9 @@ export const useDocuments = () => {
       }
     } finally {
       setIsLoading(false)
+      fetchingRef.current = false;
     }
-  }
+  }, [user, localDocuments])
 
   // Create new document
   const createDocument = async (name: string = 'Untitled') => {
@@ -217,29 +242,45 @@ export const useDocuments = () => {
         const updatedDoc = { ...doc, ...updates, updated_at: new Date().toISOString(), synced: false };
         await saveOfflineDoc(updatedDoc);
         setDocuments(prev => prev.map(d => d.id === documentId ? updatedDoc : d));
-        if (currentDocument?.id === documentId) setCurrentDocument(updatedDoc);
+          if (currentDocument?.id === documentId) {
+          const updateKeys = Object.keys(updates);
+          const isOnlyContentUpdate = updateKeys.length > 0 && updateKeys.every(k => ['data', 'snapshot'].includes(k));
+          
+          if (!isOnlyContentUpdate) {
+            setCurrentDocument(updatedDoc);
+          }
+          // For content-only updates, don't trigger currentDocument updates to avoid UI refreshes
+        }
         return true;
       }
       return false;
     }
 
     try {
+      const newUpdatedAt = new Date().toISOString();
       const { error } = await supabase
         .from('documents')
         .update({
           ...updates,
-          updated_at: new Date().toISOString()
+          updated_at: newUpdatedAt
         })
         .eq('id', documentId)
 
       if (error) throw error
 
+      const newDocData = { ...updates, updated_at: newUpdatedAt, synced: true };
+
       setDocuments(prev =>
-        prev.map(doc => doc.id === documentId ? { ...doc, ...updates } : doc)
-      )
+        prev.map(doc => doc.id === documentId ? { ...doc, ...newDocData } : doc)      )
 
       if (currentDocument?.id === documentId) {
-        setCurrentDocument(prev => prev ? { ...prev, ...updates } : null)
+        const updateKeys = Object.keys(updates);
+        const isOnlyContentUpdate = updateKeys.length > 0 && updateKeys.every(k => ['data', 'snapshot'].includes(k));
+
+        if (!isOnlyContentUpdate) {
+          setCurrentDocument(prev => prev ? { ...prev, ...newDocData } : null)
+        }
+        // For content-only updates, don't trigger currentDocument updates to avoid UI refreshes
       }
 
       return true
@@ -299,7 +340,7 @@ export const useDocuments = () => {
     }
   }
   // Load specific document
-  const loadDocument = async (documentId: string) => {
+  const loadDocument = useCallback(async (documentId: string) => {
     if (!user) return null;
     if (!navigator.onLine || isOffline || documentId.startsWith('temp-')) {
       const doc = await getOfflineDoc(documentId);
@@ -343,7 +384,7 @@ export const useDocuments = () => {
       })
       return null
     }
-  }
+  }, [user, isOffline])
 
   // Rename document
   const renameDocument = async (id: string, newName: string) => {
@@ -413,7 +454,9 @@ export const useDocuments = () => {
         .update({ name: newName.trim(), updated_at: new Date().toISOString() })
         .eq('id', id);
 
-      if (error) throw error;      // Update documents state
+      if (error) throw error;
+
+      // Update documents state
       setDocuments(prev => prev.map(doc => 
         doc.id === id ? { ...doc, name: newName.trim(), updated_at: new Date().toISOString(), synced: true } : doc
       ));
@@ -421,7 +464,9 @@ export const useDocuments = () => {
       // Update current document if it's the one being renamed
       if (currentDocument?.id === id) {
         setCurrentDocument({ ...currentDocument, name: newName.trim(), synced: true });
-      }      toast({
+      }
+
+      toast({
         title: "Document renamed",
         description: `Renamed to "${newName}"`
       });
@@ -462,15 +507,16 @@ export const useDocuments = () => {
     }
   }
 
+  // Only fetch documents when user changes and prevent multiple calls
   useEffect(() => {
-    if (user) {
+    if (user && !fetchingRef.current && !options?.skipInitialFetch) {
       fetchDocuments()
-    } else {
+    } else if (!user) {
       setDocuments([])
       setCurrentDocument(null)
       setIsLoading(false)
     }
-  }, [user])
+  }, [user, options?.skipInitialFetch, fetchDocuments])
 
   return {
     documents,
