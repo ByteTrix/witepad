@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo, useRef } from 'react'
 import { useDocuments, Document } from '@/hooks/useDocuments'
 import { DocumentsHeader } from '@/components/DocumentsHeader'
+import { SyncStatus } from '@/components/SyncStatus'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { FileText, Plus, Trash2, Calendar, Search, ArrowDownAZ, ArrowUpZA, Clock, Loader2, Edit, Check, X } from 'lucide-react'
@@ -153,6 +154,7 @@ const Documents = () => {
     }  }, [documents, searchQuery, sortOrder]);
   
   if (!user) return null
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background/90 to-muted/30 relative overflow-hidden">
       {/* Animated background elements */}
@@ -168,6 +170,11 @@ const Documents = () => {
             <h1 className="text-3xl font-bold bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent">
               My Documents
             </h1>
+            <SyncStatus 
+              isSynced={navigator.onLine && documents.every(doc => doc.synced !== false)}
+              isLocalOnly={!navigator.onLine}
+              className="bg-background/80 backdrop-blur-sm border border-muted/40 shadow-lg"
+            />
           </div>
 
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 animate-in fade-in-0 slide-in-from-top-6 duration-700 delay-100">
@@ -184,7 +191,7 @@ const Documents = () => {
             <div className="flex items-center gap-3 w-full md:w-auto">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="text-sm bg-gradient-to-r from-background/80 to-background/60 backdrop-blur-md border-muted/40 hover:border-primary/30 hover:bg-primary/5 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105">
+                  <Button variant="outline" size="sm" className="text-sm bg-gradient-to-r from-background/80 to-background/60 backdrop-blur-md border-muted/40 hover:border-primary/30 hover:bg-primary/5 transition-all duration-300 shadow-lg hover:shadow-xl">
                     {sortOrder === 'newest' && <Clock className="mr-2 h-4 w-4" />}
                     {sortOrder === 'oldest' && <Clock className="mr-2 h-4 w-4" />}
                     {sortOrder === 'a-z' && <ArrowDownAZ className="mr-2 h-4 w-4" />}

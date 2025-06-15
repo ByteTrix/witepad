@@ -1,0 +1,40 @@
+
+{
+  "name": "Witepad - Free Whiteboard",
+  "short_name": "Witepad",
+  "description": "A modern collaborative drawing and diagramming platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/witepad-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/witepad-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "design"],
+  "shortcuts": [
+    {
+      "name": "New Document",
+      "short_name": "New",
+      "description": "Create a new document",
+      "url": "/documents",
+      "icons": [
+        {
+          "src": "/witepad-logo.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ]
+}

@@ -4,6 +4,8 @@ import { useEffect, useCallback, useMemo, useState, useRef } from 'react'
 import { useDocuments, Document } from '@/hooks/useDocuments'
 import { useAuth } from '@/contexts/AuthContext'
 import { TopPanel, SharePanel } from './editor/EditorHeader'
+import { StatusIndicator } from './editor/StatusIndicator'
+import { usePWA } from '@/hooks/usePWA'
 
 interface SimpleEditorProps {
   documentId?: string
@@ -203,7 +205,11 @@ const CustomPageMenu = ({ documentId, currentDocument, renameDocument }: { docum
 export const SimpleEditor = ({ documentId, isPublicRoom = false }: SimpleEditorProps) => {
   const { updateDocument, loadDocument, currentDocument, renameDocument } = useDocuments({ skipInitialFetch: true })
   const { user } = useAuth()
+  const { isOnline } = usePWA()
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
   
   useEffect(() => {
     if (documentId) {
@@ -239,6 +245,7 @@ export const SimpleEditor = ({ documentId, isPublicRoom = false }: SimpleEditorP
         name: user.email?.split('@')[0] || 'Anonymous',
       }))
     }  }, [user, isPublicRoom])
+  
   // Create a local TLDraw store instead of using useSyncDemo for better performance
   // This removes unnecessary collaboration overhead since we handle multi-user via Supabase
   const store = useMemo(() => {
@@ -263,15 +270,31 @@ export const SimpleEditor = ({ documentId, isPublicRoom = false }: SimpleEditorP
   }, [currentDocument, store])
 
   // Create tldraw user object
-  const tldrawUser = useTldrawUser({ userPreferences, setUserPreferences })  // Cloud save function (without toast - toast is handled in the KeyboardShortcuts component)
-  const handleCloudSave = useCallback(() => {
+  const tldrawUser = useTldrawUser({ userPreferences, setUserPreferences })  
+  
+  // Cloud save function (without toast - toast is handled in the KeyboardShortcuts component)
+  const handleCloudSave = useCallback(async () => {
     if (isPublicRoom || !user || !documentId || !store) return
-    const allRecords = store.allRecords()
-    updateDocument(documentId, {
-      data: JSON.stringify(allRecords),
-      snapshot: JSON.stringify(allRecords),
-    })
-  }, [user, documentId, store, updateDocument, isPublicRoom])// Configure custom UI zones
+    
+    setIsSaving(true)
+    setHasUnsavedChanges(false)
+    
+    try {
+      const allRecords = store.allRecords()
+      await updateDocument(documentId, {
+        data: JSON.stringify(allRecords),
+        snapshot: JSON.stringify(allRecords),
+      })
+      setLastSaveTime(new Date())
+    } catch (error) {
+      console.error('Error saving to cloud:', error)
+      setHasUnsavedChanges(true)
+    } finally {
+      setIsSaving(false)
+    }
+  }, [user, documentId, store, updateDocument, isPublicRoom])
+
+  // Configure custom UI zones
   const components: TLComponents = useMemo(() => ({
     TopPanel: () => (
       <TopPanelWithShortcuts
@@ -291,32 +314,61 @@ export const SimpleEditor = ({ documentId, isPublicRoom = false }: SimpleEditorP
     PageMenu: () => (
       <CustomPageMenu documentId={documentId} currentDocument={currentDocument} renameDocument={renameDocument} />
     ),
-  }), [documentId, userPreferences, setUserPreferences, handleCloudSave, isPublicRoom, user, currentDocument, renameDocument])  // Defensive: Only proceed if store is defined
-  // Only save to cloud for authenticated users with real documents (not public rooms)
+  }), [documentId, userPreferences, setUserPreferences, handleCloudSave, isPublicRoom, user, currentDocument, renameDocument])  
+
+  // Auto-save changes (works offline-first, always saves locally first)
   useEffect(() => {
     if (isPublicRoom || !user || !documentId || !store) return
+    
     const unsubscribe = store.listen(
       () => {
+        setHasUnsavedChanges(true)
+        
         if (debounceTimeoutRef.current) {
           clearTimeout(debounceTimeoutRef.current)
         }
-        debounceTimeoutRef.current = setTimeout(() => {
+        
+        debounceTimeoutRef.current = setTimeout(async () => {
           const allRecords = store.allRecords()
-          updateDocument(documentId, {
-            data: JSON.stringify(allRecords),
-            snapshot: JSON.stringify(allRecords),
-          })
-        }, 1000) // Increased to 1000ms (1 second) debounce to reduce frequent saves
+          const dataString = JSON.stringify(allRecords)
+          
+          // Always save to local storage first (instant)
+          try {
+            localStorage.setItem(`witepad-doc-${documentId}`, dataString)
+          } catch (error) {
+            console.error('Error saving to localStorage:', error)
+          }
+          
+          // Then try to save to cloud if online
+          if (isOnline) {
+            setIsSaving(true)
+            try {
+              await updateDocument(documentId, {
+                data: dataString,
+                snapshot: dataString,
+              })
+              setLastSaveTime(new Date())
+              setHasUnsavedChanges(false)
+            } catch (error) {
+              console.error('Error saving to cloud:', error)
+              // Keep hasUnsavedChanges true if cloud save fails
+            } finally {
+              setIsSaving(false)
+            }
+          }
+        }, 1000) // 1 second debounce
       },
       { scope: 'document', source: 'user' }
     )
+    
     return () => {
+      unsubscribe()
       if (debounceTimeoutRef.current) {
         clearTimeout(debounceTimeoutRef.current)
       }
-      unsubscribe()
     }
-  }, [store, updateDocument, documentId, user, isPublicRoom])
+  }, [store, updateDocument, documentId, user, isPublicRoom, isOnline])
+  
   if (!store) return null
 
   return (
@@ -326,6 +378,14 @@ export const SimpleEditor = ({ documentId, isPublicRoom = false }: SimpleEditorP
         components={components}
         user={tldrawUser}
         inferDarkMode 
+      />
+      <StatusIndicator
+        isConnected={isOnline}
+        isOffline={!isOnline}
+        hasUnsavedChanges={hasUnsavedChanges}
+        lastSaveTime={lastSaveTime}
+        currentDocument={currentDocument}
+        isSaving={isSaving}
       />
     </div>
   )
