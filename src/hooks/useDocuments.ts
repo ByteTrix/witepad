@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from '@/components/ui/use-toast'
@@ -33,13 +33,20 @@ export const useDocuments = () => {
   const [isLoading, setIsLoading] = useState(true)
   const [isOffline, setIsOffline] = useState(false)
   const [localDocuments, setLocalDocuments] = useState<Document[]>([])
+  
+  // Add refs to prevent multiple simultaneous requests
+  const fetchingRef = useRef(false)
+  const lastFetchRef = useRef<number>(0)
 
   // Check online status
   useEffect(() => {
     const handleOnline = () => {
       setIsOffline(false);
       console.log('Back online, syncing documents...');
-      fetchDocuments();
+      // Only fetch if we haven't fetched recently
+      if (Date.now() - lastFetchRef.current > 5000) {
+        fetchDocuments();
+      }
     };
 
     const handleOffline = () => {
@@ -94,17 +101,34 @@ export const useDocuments = () => {
     }
   }, [user, localDocuments]);
 
-  // Fetch user's documents
-  const fetchDocuments = async () => {
-    if (!user) return;
+  // Memoized fetch function with debouncing
+  const fetchDocuments = useCallback(async () => {
+    if (!user || fetchingRef.current) return;
+    
+    // Prevent multiple simultaneous requests
+    if (Date.now() - lastFetchRef.current < 1000) {
+      console.log('Skipping fetch - too recent');
+      return;
+    }
+    
+    fetchingRef.current = true;
+    lastFetchRef.current = Date.now();
+    
     if (!navigator.onLine) {
       setIsOffline(true);
       setIsLoading(false);
       // Load from IndexedDB
-      const docs = await getAllOfflineDocs(user.id);
-      setDocuments(docs);
+      try {
+        const docs = await getAllOfflineDocs(user.id);
+        setDocuments(docs);
+      } catch (error) {
+        console.error('Error loading offline documents:', error);
+      }
+      fetchingRef.current = false;
       return;
-    }    try {
+    }
+
+    try {
       const { data, error } = await supabase
         .from('documents')
         .select('*')
@@ -132,8 +156,9 @@ export const useDocuments = () => {
       }
     } finally {
       setIsLoading(false)
+      fetchingRef.current = false;
     }
-  }
+  }, [user, localDocuments])
 
   // Create new document
   const createDocument = async (name: string = 'Untitled') => {
@@ -413,7 +438,9 @@ export const useDocuments = () => {
         .update({ name: newName.trim(), updated_at: new Date().toISOString() })
         .eq('id', id);
 
-      if (error) throw error;      // Update documents state
+      if (error) throw error;
+
+      // Update documents state
       setDocuments(prev => prev.map(doc => 
         doc.id === id ? { ...doc, name: newName.trim(), updated_at: new Date().toISOString(), synced: true } : doc
       ));
@@ -421,7 +448,9 @@ export const useDocuments = () => {
       // Update current document if it's the one being renamed
       if (currentDocument?.id === id) {
         setCurrentDocument({ ...currentDocument, name: newName.trim(), synced: true });
-      }      toast({
+      }
+
+      toast({
         title: "Document renamed",
         description: `Renamed to "${newName}"`
       });
@@ -462,15 +491,16 @@ export const useDocuments = () => {
     }
   }
 
+  // Only fetch documents when user changes and prevent multiple calls
   useEffect(() => {
-    if (user) {
+    if (user && !fetchingRef.current) {
       fetchDocuments()
-    } else {
+    } else if (!user) {
       setDocuments([])
       setCurrentDocument(null)
       setIsLoading(false)
     }
-  }, [user])
+  }, [user]) // Remove fetchDocuments from dependencies to prevent loops
 
   return {
     documents,
