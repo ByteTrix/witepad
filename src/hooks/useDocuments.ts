@@ -242,29 +242,45 @@ export const useDocuments = (options?: { skipInitialFetch?: boolean }) => {
         const updatedDoc = { ...doc, ...updates, updated_at: new Date().toISOString(), synced: false };
         await saveOfflineDoc(updatedDoc);
         setDocuments(prev => prev.map(d => d.id === documentId ? updatedDoc : d));
-        if (currentDocument?.id === documentId) setCurrentDocument(updatedDoc);
+        
+        if (currentDocument?.id === documentId) {
+          const updateKeys = Object.keys(updates);
+          const isOnlyContentUpdate = updateKeys.length > 0 && updateKeys.every(k => ['data', 'snapshot'].includes(k));
+          
+          if (!isOnlyContentUpdate) {
+            setCurrentDocument(updatedDoc);
+          }
+        }
         return true;
       }
       return false;
     }
 
     try {
+      const newUpdatedAt = new Date().toISOString();
       const { error } = await supabase
         .from('documents')
         .update({
           ...updates,
-          updated_at: new Date().toISOString()
+          updated_at: newUpdatedAt
         })
         .eq('id', documentId)
 
       if (error) throw error
 
+      const newDocData = { ...updates, updated_at: newUpdatedAt, synced: true };
+
       setDocuments(prev =>
-        prev.map(doc => doc.id === documentId ? { ...doc, ...updates } : doc)
+        prev.map(doc => doc.id === documentId ? { ...doc, ...newDocData } : doc)
       )
 
       if (currentDocument?.id === documentId) {
-        setCurrentDocument(prev => prev ? { ...prev, ...updates } : null)
+        const updateKeys = Object.keys(updates);
+        const isOnlyContentUpdate = updateKeys.length > 0 && updateKeys.every(k => ['data', 'snapshot'].includes(k));
+
+        if (!isOnlyContentUpdate) {
+          setCurrentDocument(prev => prev ? { ...prev, ...newDocData } : null)
+        }
       }
 
       return true
