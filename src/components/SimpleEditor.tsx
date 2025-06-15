@@ -1,10 +1,11 @@
-import { Tldraw, TLComponents, TLUserPreferences, useTldrawUser, useToasts, createTLStore, defaultShapeUtils, defaultBindingUtils } from 'tldraw'
+import { Tldraw, TLComponents, TLUserPreferences, useTldrawUser, useToasts, createTLStore, defaultShapeUtils, defaultBindingUtils, TLRecord, TLAsset, TLImageAsset, TLVideoAsset } from 'tldraw'
 import 'tldraw/tldraw.css'
 import { useEffect, useCallback, useMemo, useState, useRef } from 'react'
 import { useDocuments, Document } from '@/hooks/useDocuments'
 import { useAuth } from '@/contexts/AuthContext'
 import { TopPanel, SharePanel } from './editor/EditorHeader'
 import { usePWA } from '@/hooks/usePWA'
+import { getAssetData } from '@/lib/offline-db'; // Added import
 
 interface SimpleEditorProps {
   documentId?: string
@@ -257,16 +258,111 @@ export const SimpleEditor = ({ documentId, isPublicRoom = false }: SimpleEditorP
   // Load document data into store when document is loaded
   useEffect(() => {
     if (currentDocument && currentDocument.data && store) {
-      try {
-        const records = JSON.parse(currentDocument.data)
-        if (Array.isArray(records) && records.length > 0) {
-          store.put(records)
+      const loadAndProcessRecords = async () => {
+        try {
+          let recordsToProcess: TLRecord[];
+
+          // Robust parsing of currentDocument.data
+          if (typeof currentDocument.data === 'string') {
+            const parsedJson = JSON.parse(currentDocument.data);
+            if (Array.isArray(parsedJson)) {
+              recordsToProcess = parsedJson as TLRecord[];
+            } else if (typeof parsedJson === 'object' && parsedJson !== null && Object.keys(parsedJson).length === 0) {
+              recordsToProcess = []; // Handle empty tldraw doc from "{}" string
+            } else {
+              console.error('SimpleEditor: Parsed document data string is not an array or empty object. Data:', parsedJson);
+              return; // Exit if format is unexpected
+            }
+          } else if (Array.isArray(currentDocument.data)) {
+            recordsToProcess = currentDocument.data as TLRecord[];
+          } else if (currentDocument.data && typeof currentDocument.data === 'object' && Object.keys(currentDocument.data).length === 0) {
+            recordsToProcess = []; // Handle if currentDocument.data is an actual empty JS object
+          } else {
+            console.error('SimpleEditor: currentDocument.data is not a string or a recognized array/object format. Data:', currentDocument.data);
+            return; // Exit if format is unexpected
+          }
+
+          if (!recordsToProcess) {
+            console.error('SimpleEditor: recordsToProcess is undefined after parsing. This should not happen.');
+            return;
+          }
+          
+          const processedRecords: TLRecord[] = await Promise.all(
+            recordsToProcess.map(async (record: TLRecord): Promise<TLRecord> => {
+              if (record.typeName === 'asset') {
+                const assetRecord = record as TLAsset;
+                const assetIdForLog = assetRecord.id;
+
+                if (
+                  (assetRecord.type === 'image' || assetRecord.type === 'video') &&
+                  assetRecord.props?.src?.startsWith('local-asset:')
+                ) {
+                  const originalSrc = assetRecord.props.src;
+                  const assetId = originalSrc.replace('local-asset:', '');
+                  console.log(`SimpleEditor: Processing local-asset for asset ID '${assetIdForLog}' (derived key '${assetId}') with original src: ${originalSrc}`);
+                  try {
+                    const assetData = await getAssetData(assetId);
+                    if (assetData instanceof Blob) {
+                      // Convert Blob to data URL
+                      const dataUrl = await new Promise<string>((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          if (typeof reader.result === 'string') resolve(reader.result);
+                          else reject(new Error('Failed to convert Blob to data URL'));
+                        };
+                        reader.onerror = reject;
+                        reader.readAsDataURL(assetData);
+                      });
+                      console.log(`SimpleEditor: Successfully converted asset ID '${assetIdForLog}' (key '${assetId}') to data URL.`);
+                      if (assetRecord.type === 'image') {
+                        const specificAsset = assetRecord as TLImageAsset;
+                        return {
+                           ...specificAsset,
+                           props: { ...specificAsset.props, src: dataUrl },
+                        } as TLImageAsset; 
+                      } else if (assetRecord.type === 'video') {
+                         const specificAsset = assetRecord as TLVideoAsset;
+                         return {
+                           ...specificAsset,
+                           props: { ...specificAsset.props, src: dataUrl },
+                         } as TLVideoAsset; 
+                      }
+                    } else {
+                      console.warn(`SimpleEditor: Asset data for asset ID '${assetIdForLog}' (key '${assetId}', src: ${originalSrc}) is NOT a Blob. Actual type: ${typeof assetData}, Data:`, assetData, `Original record with local-asset src will be used.`);
+                    }
+                  } catch (error) {
+                    console.error(`SimpleEditor: Error fetching/processing asset data for asset ID '${assetIdForLog}' (key '${assetId}', src: ${originalSrc}):`, error, `Original record with local-asset src will be used.`);
+                  }
+                }
+              }
+              return record; 
+            })
+          );
+
+          // console.log("SimpleEditor: Attempting to put processed records into store:", processedRecords);
+          if (recordsToProcess.length === 0 && processedRecords.length === 0) {
+            store.put([]); // Explicitly put empty array if original was empty
+            // console.log("SimpleEditor: Successfully put empty array into store for empty document.");
+          } else if (processedRecords.length > 0) {
+            store.put(processedRecords);
+            // console.log("SimpleEditor: Successfully put records into store.");
+          } else if (recordsToProcess.length > 0 && processedRecords.length === 0) {
+            console.warn("SimpleEditor: Original records existed, but processed records array is empty. This might indicate all records failed processing or were filtered out. Not putting into store to avoid clearing content unintentionally.");
+          }
+          // If recordsToProcess was empty and processedRecords is also empty, store.put([]) is fine.
+
+        } catch (error) { 
+          console.error('SimpleEditor: Error loading document data into store (outer catch):', error);
         }
-      } catch (error) {
-        console.error('Error loading document data:', error)
-      }
+      };
+
+      loadAndProcessRecords();
     }
-  }, [currentDocument, store])
+    // TODO: Consider revoking object URLs in a cleanup function
+    // This effect should ideally have a cleanup that iterates through any created blob URLs
+    // and calls URL.revokeObjectURL() for each. This would require storing the generated
+    // blob URLs, perhaps in a ref.
+  }, [currentDocument, store]);
 
   // Create tldraw user object
   const tldrawUser = useTldrawUser({ userPreferences, setUserPreferences })  
@@ -331,33 +427,30 @@ export const SimpleEditor = ({ documentId, isPublicRoom = false }: SimpleEditorP
           const allRecords = store.allRecords()
           const dataString = JSON.stringify(allRecords)
           
-          // Always save to local storage first (instant)
+          // Use updateDocument to save to IndexedDB and then Supabase
           try {
-            localStorage.setItem(`witepad-doc-${documentId}`, dataString)
-          } catch (error) {
-            console.error('Error saving to localStorage:', error)
-          }
-          
-          // Then try to save to cloud if online
-          if (isOnline) {
-            setIsSaving(true)
-            try {
-              await updateDocument(documentId, {
-                data: dataString,
-                snapshot: dataString,
-              })
-              setLastSaveTime(new Date())
-              setHasUnsavedChanges(false)
-            } catch (error) {
-              console.error('Error saving to cloud:', error)
-              // Keep hasUnsavedChanges true if cloud save fails
-            } finally {
-              setIsSaving(false)
+            setIsSaving(true); // Indicate saving process
+            const success = await updateDocument(documentId, {
+              data: dataString, // Send as string, useDocuments handles parsing if needed for its own state
+              // snapshot: dataString, // Optionally, if you want to update snapshot simultaneously
+            });
+            if (success) {
+              setHasUnsavedChanges(false);
+              setLastSaveTime(new Date());
+              console.log('Auto-saved document:', documentId);
+            } else {
+              console.error('Auto-save failed for document:', documentId);
+              // Keep hasUnsavedChanges true if save failed
             }
+          } catch (error) {
+            console.error('Error during auto-save:', error)
+            // Keep hasUnsavedChanges true on error
+          } finally {
+            setIsSaving(false);
           }
-        }, 1000) // 1 second debounce
+        }, 1500) // Debounce auto-save e.g., every 1.5 seconds
       },
-      { scope: 'document', source: 'user' }
+      { scope: 'document', source: 'user' } // Only listen to user changes on the document
     )
     
     return () => {
@@ -366,8 +459,26 @@ export const SimpleEditor = ({ documentId, isPublicRoom = false }: SimpleEditorP
         clearTimeout(debounceTimeoutRef.current)
       }
     }
-  }, [store, updateDocument, documentId, user, isPublicRoom, isOnline])
-  
+  }, [store, documentId, user, isPublicRoom, updateDocument, setIsSaving, setHasUnsavedChanges, setLastSaveTime])  
+
+  // Effect to handle initial load and online/offline status for current document
+  useEffect(() => {
+    if (!documentId || isPublicRoom) return
+    
+    const handleOnline = () => {
+      console.log('Back online, syncing changes...')
+      // Try to re-save document if there were unsaved changes
+      if (hasUnsavedChanges) {
+        handleCloudSave()
+      }
+    }
+    
+    window.addEventListener('online', handleOnline)
+    return () => {
+      window.removeEventListener('online', handleOnline)
+    }
+  }, [documentId, isPublicRoom, hasUnsavedChanges, handleCloudSave])
+
   if (!store) return null
 
   return (

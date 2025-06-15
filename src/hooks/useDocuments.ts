@@ -7,9 +7,8 @@ import {
   getDocument as getOfflineDoc,
   getAllDocuments as getAllOfflineDocs,
   deleteDocument as deleteOfflineDoc,
-  saveImage as saveOfflineImage,
-  getImage as getOfflineImage,
-  deleteImage as deleteOfflineImage,
+  saveAsset, // Added
+  getAssetData, // Added
 } from '@/lib/offline-db';
 
 export interface Document {
@@ -17,14 +16,131 @@ export interface Document {
   name: string
   owner_id: string
   is_public: boolean
-  data: any
+  data: any // Typically a JSON string of tldraw records
   snapshot: any
   created_at: string
   updated_at: string
-  synced?: boolean // true if synced to server
-  deleted?: boolean // true if deleted locally
-  isRenaming?: boolean // used for UI state management
+  synced?: boolean
+  deleted?: boolean
+  isRenaming?: boolean
 }
+
+// Define a simplified TLAsset type for processing
+interface TLAsset {
+  id: string;
+  typeName: 'asset'; // Or check record.type for 'image', 'video' etc.
+  type: 'image' | 'video' | 'bookmark' | string; // Actual asset type
+  props: {
+    src?: string;
+    [key: string]: any; // Other properties
+  };
+}
+
+// Define WitepadAsset if not properly imported/available for type checking
+// This should match the one in offline-db.ts
+interface WitepadAssetForHook {
+  id: string;
+  type: string;
+  size: number;
+  metadata?: any;
+  createdAt: string;
+  owner_id: string;
+}
+
+
+// Helper function to process document assets (images, etc.)
+async function processDocumentAssets(
+  documentDataString: string | object | undefined,
+  owner_id: string,
+  isOnline: boolean
+): Promise<string | undefined> {
+  if (!documentDataString) return undefined;
+
+  let records: any[];
+  try {
+    if (typeof documentDataString === 'string') {
+      records = JSON.parse(documentDataString);
+    } else if (typeof documentDataString === 'object' && documentDataString !== null) {
+      if (Array.isArray(documentDataString)) {
+        records = documentDataString;
+      } else if (Object.keys(documentDataString).length === 0) {
+        return JSON.stringify(documentDataString); 
+      } else {
+        console.warn('Document data is a non-array object, asset processing might be incomplete.');
+        records = [documentDataString]; 
+      }
+    } else {
+      return undefined; 
+    }
+
+    if (!Array.isArray(records)) {
+      if (typeof records === 'object' && Object.keys(records).length === 0) {
+        return JSON.stringify(records); 
+      }
+      console.warn('Document data is not an array of records after parsing, skipping asset processing. Data:', records);
+      return JSON.stringify(records); 
+    }
+  } catch (parseError) {
+    console.error('Error parsing document data for asset processing:', parseError, 'Data:', documentDataString);
+    return typeof documentDataString === 'string' ? documentDataString : JSON.stringify(documentDataString);
+  }
+
+  const FETCHABLE_ASSET_TYPES = ['image', 'video']; // Define media types to fetch
+
+  const processedRecords = await Promise.all(
+    records.map(async (record: any) => {
+      // Check if it's a tldraw asset record and of a fetchable type
+      if (
+        record.typeName === 'asset' && 
+        typeof record.type === 'string' && // Ensure record.type is a string
+        FETCHABLE_ASSET_TYPES.includes(record.type) &&
+        record.props &&
+        typeof record.props.src === 'string' &&
+        (record.props.src.startsWith('http://') || record.props.src.startsWith('https://')) &&
+        isOnline 
+      ) {
+        const tlAsset = record as TLAsset; // Cast to our defined TLAsset type
+        try {
+          const existingAssetBlob = await getAssetData(tlAsset.id);
+          if (existingAssetBlob instanceof Blob && existingAssetBlob.size > 0) {
+            if (tlAsset.props.src !== `local-asset:${tlAsset.id}`) {
+                console.log(`Asset ${tlAsset.id} (type: ${tlAsset.type}) already in DB, updating src pointer.`);
+                return { ...tlAsset, props: { ...tlAsset.props, src: `local-asset:${tlAsset.id}` } };
+            }
+            return tlAsset; 
+          }
+
+          console.log(`Fetching external asset: ${tlAsset.props.src} (type: ${tlAsset.type}, id: ${tlAsset.id})`);
+          const response = await fetch(tlAsset.props.src);
+          if (!response.ok) {
+            console.warn(`Failed to fetch asset ${tlAsset.id} (type: ${tlAsset.type}) from ${tlAsset.props.src}: ${response.statusText}`);
+            return tlAsset; 
+          }
+          const blob = await response.blob();
+
+          const witepadAsset: WitepadAssetForHook = {
+            id: tlAsset.id,
+            type: tlAsset.type, // Store the specific asset type (e.g., 'image', 'video')
+            size: blob.size,
+            metadata: { ...tlAsset.props, src: undefined, originalSrc: tlAsset.props.src },
+            createdAt: new Date().toISOString(),
+            owner_id: owner_id,
+          };
+          
+          await saveAsset(witepadAsset, blob);
+          console.log(`Asset ${tlAsset.id} (type: ${tlAsset.type}) fetched and stored in IndexedDB.`);
+          return { ...tlAsset, props: { ...tlAsset.props, src: `local-asset:${tlAsset.id}` } };
+        } catch (fetchError) {
+          console.error(`Error fetching or storing asset ${tlAsset.id} (type: ${tlAsset.type}) from ${tlAsset.props.src}:`, fetchError);
+          return tlAsset; 
+        }
+      }
+      return record;
+    })
+  );
+  return JSON.stringify(processedRecords);
+}
+
 
 export const useDocuments = (options?: { skipInitialFetch?: boolean }) => {
   const { user } = useAuth()
@@ -38,14 +154,130 @@ export const useDocuments = (options?: { skipInitialFetch?: boolean }) => {
   const fetchingRef = useRef(false)
   const lastFetchRef = useRef<number>(0)
 
+  // Debounced background fetch from Supabase (does not block UI)
+  const supabaseFetchTimeout = useRef<NodeJS.Timeout | null>(null);
+  const fetchDocumentsFromSupabase = useCallback(() => {
+    if (!user) return;
+    if (supabaseFetchTimeout.current) clearTimeout(supabaseFetchTimeout.current);
+    supabaseFetchTimeout.current = setTimeout(async () => {
+      if (!navigator.onLine) return;
+      try {
+        const { data, error } = await supabase
+          .from('documents')
+          .select('*')
+          .order('updated_at', { ascending: false });
+        if (error) throw error;
+        const fetchedDocsData = (data || []).map(doc => ({ ...doc, synced: true }));
+        // Only update if Supabase has newer docs
+        let shouldUpdate = false;
+        for (const doc of fetchedDocsData) {
+          const localDoc = localDocuments.find(d => d.id === doc.id);
+          if (!localDoc || new Date(doc.updated_at) > new Date(localDoc.updated_at)) {
+            shouldUpdate = true;
+            break;
+          }
+        }
+        if (shouldUpdate) {
+          const processedDocs = await Promise.all(fetchedDocsData.map(async (doc) => {
+            let dataForProcessing: string | object | undefined = undefined;
+            if (typeof doc.data === 'string') {
+              dataForProcessing = doc.data;
+            } else if (typeof doc.data === 'object' && doc.data !== null) {
+              dataForProcessing = doc.data;
+            } else if (doc.data === null || doc.data === undefined) {
+              dataForProcessing = JSON.stringify({});
+            } else {
+              dataForProcessing = JSON.stringify(doc.data);
+            }
+            const processedDataString = await processDocumentAssets(dataForProcessing, user.id, navigator.onLine);
+            return { ...doc, data: processedDataString };
+          }));
+          setDocuments(processedDocs);
+          setLocalDocuments(processedDocs);
+          for (const doc of processedDocs) {
+            await saveOfflineDoc(doc);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching documents from Supabase (background):', error);
+      }
+    }, 1000); // Debounce 1s
+  }, [user, supabase, localDocuments, saveOfflineDoc, processDocumentAssets]); // Added processDocumentAssets dependency
+
   // Check online status
   useEffect(() => {
-    const handleOnline = () => {
+    const handleOnline = async () => {
       setIsOffline(false);
-      console.log('Back online, syncing documents...');
-      // Only fetch if we haven't fetched recently
-      if (Date.now() - lastFetchRef.current > 5000) {
-        fetchDocuments();
+      console.log('Back online. Attempting to sync local changes and fetch server updates.');
+
+      if (user) {
+        let changesMadeLocally = false;
+        try {
+          const localDocsBeforeSync = await getAllOfflineDocs(user.id);
+          const unsyncedDocs = localDocsBeforeSync.filter(doc => doc.synced === false);
+
+          if (unsyncedDocs.length > 0) {
+            console.log(`Found ${unsyncedDocs.length} unsynced document(s) to upload.`);
+            for (const doc of unsyncedDocs) {
+              if (doc.id.startsWith('temp-')) {
+                const { data: created, error } = await supabase
+                  .from('documents')
+                  .insert({
+                    name: doc.name,
+                    owner_id: doc.owner_id,
+                    is_public: doc.is_public,
+                    data: doc.data,
+                    snapshot: doc.snapshot,
+                    created_at: doc.created_at,
+                    updated_at: doc.updated_at,
+                  })
+                  .select()
+                  .single();
+                if (!error && created) {
+                  await deleteOfflineDoc(doc.id);
+                  await saveOfflineDoc({ ...created, synced: true }); // Save with server ID and data
+                  changesMadeLocally = true;
+                  console.log(`Offline-created document '${created.name}' synced to Supabase with new ID ${created.id}.`);
+                } else {
+                  console.error(`Failed to sync offline-created doc '${doc.name}' to Supabase:`, error);
+                }
+              } else {
+                const { error } = await supabase
+                  .from('documents')
+                  .update({
+                    name: doc.name,
+                    is_public: doc.is_public,
+                    data: doc.data,
+                    snapshot: doc.snapshot,
+                    updated_at: doc.updated_at,
+                  })
+                  .eq('id', doc.id);
+                if (!error) {
+                  await saveOfflineDoc({ ...doc, synced: true });
+                  changesMadeLocally = true;
+                  console.log(`Offline-updated document '${doc.name}' synced to Supabase.`);
+                } else {
+                  console.error(`Failed to sync offline-updated doc '${doc.name}' to Supabase:`, error);
+                }
+              }
+            }
+          }
+
+          // If uploads happened, refresh document list from local DB to show updated sync status / new IDs
+          if (changesMadeLocally) {
+            const updatedLocalDocs = await getAllOfflineDocs(user.id);
+            setDocuments(updatedLocalDocs);
+            setLocalDocuments(updatedLocalDocs); // also update localDocuments for fetchDocumentsFromSupabase comparison
+            console.log('Local documents state refreshed after upload process.');
+          }
+
+        } catch (syncError) {
+          console.error('Error during upload of offline changes:', syncError);
+        }
+
+        // Phase 2: Fetch latest updates from Supabase (background)
+        console.log('Triggering background fetch for server updates.');
+        fetchDocumentsFromSupabase(); // This is the debounced background fetch
       }
     };
 
@@ -56,128 +288,170 @@ export const useDocuments = (options?: { skipInitialFetch?: boolean }) => {
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-    
-    // Initial check
+
+    // Initial check and action
     setIsOffline(!navigator.onLine);
+    if (navigator.onLine && user) {
+      handleOnline();
+    }
 
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, []);
+  }, [user, supabase, getAllOfflineDocs, saveOfflineDoc, deleteOfflineDoc, fetchDocumentsFromSupabase, localDocuments]); // localDocuments is a dep for fetchDocumentsFromSupabase
 
-  // Load local documents from localStorage on init
+  // Load local documents from IndexedDB immediately on mount or user change
   useEffect(() => {
     if (user) {
-      try {
-        const savedDocs = localStorage.getItem(`cloud-sketch-local-docs-${user.id}`);
-        if (savedDocs) {
-          const parsedDocs = JSON.parse(savedDocs);
-          setLocalDocuments(parsedDocs);
-          
-          // If we're offline, use local documents as the primary source
-          if (!navigator.onLine) {
-            setDocuments(parsedDocs);
-            setIsLoading(false);
-          }
+      (async () => {
+        try {
+          const docs = await getAllOfflineDocs(user.id);
+          setDocuments(docs);
+          setLocalDocuments(docs);
+          setIsLoading(false);
+        } catch (error) {
+          console.error('Error loading local documents:', error);
         }
-      } catch (error) {
-        console.error('Error loading local documents:', error);
-      }
+      })();
+    } else {
+      setDocuments([]);
+      setLocalDocuments([]);
+      setIsLoading(false);
     }
   }, [user]);
 
-  // Save local documents to localStorage when they change
+  // Trigger background fetch on mount, online, or tab focus
   useEffect(() => {
-    if (user && localDocuments.length > 0) {
-      try {
-        localStorage.setItem(
-          `cloud-sketch-local-docs-${user.id}`, 
-          JSON.stringify(localDocuments)
-        );
-      } catch (error) {
-        console.error('Error saving local documents:', error);
-      }
-    }
-  }, [user, localDocuments]);
+    if (!user) return;
+    fetchDocumentsFromSupabase();
+    const onFocus = () => fetchDocumentsFromSupabase();
+    window.addEventListener('focus', onFocus);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      if (supabaseFetchTimeout.current) clearTimeout(supabaseFetchTimeout.current);
+    };
+  }, [user, fetchDocumentsFromSupabase]);
 
   // Memoized fetch function with debouncing
   const fetchDocuments = useCallback(async () => {
     if (!user || fetchingRef.current) return;
-    
-    // Prevent multiple simultaneous requests
     if (Date.now() - lastFetchRef.current < 1000) {
-      console.log('Skipping fetch - too recent');
       return;
     }
     
     fetchingRef.current = true;
     lastFetchRef.current = Date.now();
+    setIsLoading(true); 
     
     if (!navigator.onLine) {
       setIsOffline(true);
-      setIsLoading(false);
-      // Load from IndexedDB
       try {
+        console.log('Fetching documents from IndexedDB (offline)');
         const docs = await getAllOfflineDocs(user.id);
         setDocuments(docs);
+        setLocalDocuments(docs); 
       } catch (error) {
         console.error('Error loading offline documents:', error);
+        toast({
+          title: "Offline Error",
+          description: "Could not load documents from local storage.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+        fetchingRef.current = false;
       }
-      fetchingRef.current = false;
       return;
     }
 
+    // Online: Fetch from Supabase and update IndexedDB
     try {
+      console.log('Fetching documents from Supabase (online)');
       const { data, error } = await supabase
         .from('documents')
         .select('*')
-        .order('updated_at', { ascending: false })
+        .order('updated_at', { ascending: false });
 
-      if (error) throw error
+      if (error) throw error;
       
-      // Mark server documents as synced
-      const syncedData = (data || []).map(doc => ({ ...doc, synced: true }))
-      setDocuments(syncedData)
+      const fetchedDocsData = (data || []).map(doc => ({ ...doc, synced: true }));
+
+      const processedDocs = await Promise.all(fetchedDocsData.map(async (doc) => {
+        let dataForProcessing: string | object | undefined = undefined;
+        if (typeof doc.data === 'string') {
+          dataForProcessing = doc.data;
+        } else if (typeof doc.data === 'object' && doc.data !== null) {
+          dataForProcessing = doc.data; 
+        } else if (doc.data === null || doc.data === undefined) {
+          dataForProcessing = JSON.stringify({}); // Default to empty object string if null/undefined
+        } else {
+          console.warn(`Unexpected data type for doc ${doc.id}: ${typeof doc.data}. Stringifying.`);
+          dataForProcessing = JSON.stringify(doc.data);
+        }
+        const processedDataString = await processDocumentAssets(dataForProcessing, user.id, navigator.onLine);
+        return { ...doc, data: processedDataString };
+      }));
       
-      // Update local cache with server data
-      setLocalDocuments(syncedData);
+      setDocuments(processedDocs);
+      setLocalDocuments(processedDocs); 
+
+      if (user) {
+        for (const doc of processedDocs) {
+          await saveOfflineDoc(doc);
+        }
+        console.log('Synced Supabase documents (with processed assets) to IndexedDB');
+      }
+      
     } catch (error: any) {
-      console.error('Error fetching documents:', error)
+      console.error('Error fetching documents from Supabase:', error);
       toast({
-        title: "Error",
-        description: "Failed to fetch documents, using local data instead",
+        title: "Network Error",
+        description: "Failed to fetch documents from server. Trying local storage.",
         variant: "destructive"
       });
-      
-      // Fall back to local documents if available
-      if (localDocuments.length > 0) {
-        setDocuments(localDocuments);
+      try {
+        console.log('Falling back to IndexedDB after Supabase fetch error');
+        const docs = await getAllOfflineDocs(user.id);
+        setDocuments(docs);
+        setLocalDocuments(docs);
+      } catch (dbError) {
+        console.error('Error loading offline documents after Supabase fail:', dbError);
       }
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
       fetchingRef.current = false;
     }
-  }, [user, localDocuments])
+  }, [user, supabase, toast, getAllOfflineDocs, saveOfflineDoc]); 
 
   // Create new document
   const createDocument = async (name: string = 'Untitled') => {
     if (!user) return null;
     const tempId = `temp-${Date.now()}`;
+    // Initial document data is typically empty or minimal, no assets to process yet.
+    // Assets are added via editor interaction, which triggers updateDocument.
+    const initialDocData = JSON.stringify({}); // tldraw expects an object for initial store, often empty.
+                                            // Or an array of records. Let's use empty object for new.
+                                            // The editor will populate it.
+
+    const newDocBase = {
+      name,
+      owner_id: user.id,
+      is_public: false,
+      data: initialDocData, // No assets to process here initially
+      snapshot: initialDocData,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
     if (!navigator.onLine || isOffline) {
       const newDoc: Document = {
         id: tempId,
-        name,
-        owner_id: user.id,
-        is_public: false,
-        data: {},
-        snapshot: {},
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        ...newDocBase,
         synced: false,
       };
       await saveOfflineDoc(newDoc);
-      setDocuments(prev => [newDoc, ...prev]);
+      setDocuments(prev => [newDoc, ...prev].sort((a,b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()));
       setCurrentDocument(newDoc);
       toast({
         title: "Document created locally",
@@ -187,124 +461,172 @@ export const useDocuments = (options?: { skipInitialFetch?: boolean }) => {
     }
 
     try {
-      console.log('Creating document:', name)
-      
-      // Add timeout to prevent hanging on network issues
+      console.log('Creating document on Supabase:', name);
       const timeoutPromise = new Promise((_, reject) => 
         setTimeout(() => reject(new Error('Request timeout')), 10000)
-      )
+      );
       
+      // Supabase expects owner_id, name, data, snapshot for insert
+      const { owner_id, data, snapshot } = newDocBase;
       const createPromise = supabase
         .from('documents')
-        .insert({
-          name,
-          owner_id: user.id,
-          data: {},
-          snapshot: {}
-        })
+        .insert({ name, owner_id, data, snapshot })
         .select()
-        .single()
+        .single();
 
-      const { data, error } = await Promise.race([createPromise, timeoutPromise]) as any
+      const { data: dbDoc, error } = await Promise.race([createPromise, timeoutPromise]) as any;
 
       if (error) {
-        console.error('Supabase error creating document:', error)
-        throw error
+        console.error('Supabase error creating document:', error);
+        throw error;
       }
 
-      console.log('Document created successfully:', data)
-      setDocuments(prev => [data, ...prev])
-      setCurrentDocument(data)
+      // dbDoc from Supabase will have the final id and other fields. Merge with our base.
+      const finalDoc = { ...newDocBase, ...dbDoc, data: initialDocData, snapshot: initialDocData, synced: true };
+      console.log('Document created successfully on Supabase:', finalDoc);
+      await saveOfflineDoc(finalDoc); 
+      setDocuments(prev => [finalDoc, ...prev].sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()));
+      setCurrentDocument(finalDoc);
       
       toast({
         title: "Document created",
         description: `Created "${name}" successfully`
-      })
+      });
       
-      return data
+      return finalDoc;
     } catch (error: any) {
-      console.error('Error creating document:', error)
+      console.error('Error creating document, saving locally:', error);
+      const newDoc: Document = {
+        id: tempId, 
+        ...newDocBase,
+        synced: false,
+      };
+      await saveOfflineDoc(newDoc);
+      setDocuments(prev => [newDoc, ...prev].sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()));
+      setCurrentDocument(newDoc);
       toast({
-        title: "Error",
-        description: error.message || "Failed to create document",
-        variant: "destructive"
-      })
-      return null
+        title: "Error Creating Online",
+        description: `Document "${name}" created locally. Will sync when online. Error: ${error.message}`,
+        variant: "default" 
+      });
+      return newDoc; 
     }
   }
 
   // Update document
   const updateDocument = async (documentId: string, updates: Partial<Document>) => {
-    if (!user) return false
-    if (!navigator.onLine || isOffline || documentId.startsWith('temp-')) {
-      const doc = await getOfflineDoc(documentId);
-      if (doc) {
-        const updatedDoc = { ...doc, ...updates, updated_at: new Date().toISOString(), synced: false };
-        await saveOfflineDoc(updatedDoc);
-        setDocuments(prev => prev.map(d => d.id === documentId ? updatedDoc : d));
-          if (currentDocument?.id === documentId) {
-          const updateKeys = Object.keys(updates);
-          const isOnlyContentUpdate = updateKeys.length > 0 && updateKeys.every(k => ['data', 'snapshot'].includes(k));
-          
-          if (!isOnlyContentUpdate) {
-            setCurrentDocument(updatedDoc);
-          }
-          // For content-only updates, don't trigger currentDocument updates to avoid UI refreshes
-        }
-        return true;
-      }
+    if (!user) return false;
+    
+    const localDoc = await getOfflineDoc(documentId);
+    const docInMemory = documents.find(d => d.id === documentId);
+    const docToUpdate = localDoc || docInMemory;
+
+
+    if (!docToUpdate) {
+      console.error("Document not found for update:", documentId);
+      toast({ title: "Error", description: "Document not found for update.", variant: "destructive" });
       return false;
     }
 
+    let processedData = updates.data;
+    // Ensure updates.data is a string before processing, as SimpleEditor sends stringified records
+    if (updates.data && typeof updates.data === 'string') {
+        processedData = await processDocumentAssets(updates.data, user.id, navigator.onLine);
+    } else if (updates.data && typeof updates.data === 'object') {
+        // If it's an object (already parsed), stringify then process, or process directly if helper supports it
+        processedData = await processDocumentAssets(JSON.stringify(updates.data), user.id, navigator.onLine);
+    }
+
+
+    const updatedDocData = { 
+      ...docToUpdate, 
+      ...updates, 
+      data: processedData || docToUpdate.data, // Use processed data, fallback to existing if processing yields undefined
+      updated_at: new Date().toISOString(),
+      owner_id: docToUpdate.owner_id, // Ensure these are preserved
+      created_at: docToUpdate.created_at,
+    };
+
+    if (!navigator.onLine || isOffline || documentId.startsWith('temp-')) {
+      const offlineUpdatedDoc = { ...updatedDocData, synced: false };
+      await saveOfflineDoc(offlineUpdatedDoc);
+      setDocuments(prev => prev.map(d => d.id === documentId ? offlineUpdatedDoc : d).sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()));
+      if (currentDocument?.id === documentId) {
+        setCurrentDocument(offlineUpdatedDoc);
+      }
+      console.log('Document updated locally:', documentId);
+      return true;
+    }
+
     try {
-      const newUpdatedAt = new Date().toISOString();
+      // Only send fields that Supabase can update.
+      // 'data' should be the processedData string.
+      const supabaseUpdatePayload: Partial<Document> = { ...updates };
+      if (processedData !== undefined) { // only include data if it was processed
+        supabaseUpdatePayload.data = processedData;
+      } else {
+        delete supabaseUpdatePayload.data; // Don't send undefined data
+      }
+      // Ensure updated_at is part of the payload for Supabase
+      supabaseUpdatePayload.updated_at = updatedDocData.updated_at;
+
+
       const { error } = await supabase
         .from('documents')
-        .update({
-          ...updates,
-          updated_at: newUpdatedAt
-        })
-        .eq('id', documentId)
+        .update(supabaseUpdatePayload) 
+        .eq('id', documentId);
 
-      if (error) throw error
+      if (error) throw error;
 
-      const newDocData = { ...updates, updated_at: newUpdatedAt, synced: true };
+      const syncedDoc = { ...updatedDocData, data: processedData || updatedDocData.data, synced: true };
+      await saveOfflineDoc(syncedDoc); 
 
       setDocuments(prev =>
-        prev.map(doc => doc.id === documentId ? { ...doc, ...newDocData } : doc)      )
+        prev.map(doc => doc.id === documentId ? syncedDoc : doc).sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+      );
 
       if (currentDocument?.id === documentId) {
-        const updateKeys = Object.keys(updates);
-        const isOnlyContentUpdate = updateKeys.length > 0 && updateKeys.every(k => ['data', 'snapshot'].includes(k));
-
-        if (!isOnlyContentUpdate) {
-          setCurrentDocument(prev => prev ? { ...prev, ...newDocData } : null)
-        }
-        // For content-only updates, don't trigger currentDocument updates to avoid UI refreshes
+         setCurrentDocument(syncedDoc);
       }
-
-      return true
+      console.log('Document updated on Supabase and IndexedDB:', documentId);
+      return true;
     } catch (error: any) {
-      console.error('Error updating document:', error)
+      console.error('Error updating document on Supabase, saving locally:', error);
+      const fallbackDoc = { ...updatedDocData, data: processedData || updatedDocData.data, synced: false };
+      await saveOfflineDoc(fallbackDoc);
+      setDocuments(prev => prev.map(d => d.id === documentId ? fallbackDoc : d).sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()));
+      if (currentDocument?.id === documentId) {
+        setCurrentDocument(fallbackDoc);
+      }
       toast({
-        title: "Error",
-        description: "Failed to update document",
-        variant: "destructive"
-      })
-      return false
+        title: "Update Error",
+        description: "Failed to update document on server. Changes saved locally.",
+        variant: "default"
+      });
+      return true; 
     }
   }
 
   // Delete document
   const deleteDocument = async (documentId: string) => {
-    if (!user) return false
-    if (!navigator.onLine || isOffline || documentId.startsWith('temp-')) {
+    if (!user) return false;
+    
+    // Delete from IndexedDB first
+    try {
       await deleteOfflineDoc(documentId);
       setDocuments(prev => prev.filter(doc => doc.id !== documentId));
       if (currentDocument?.id === documentId) setCurrentDocument(null);
+      console.log('Document deleted from IndexedDB:', documentId);
+    } catch (e) {
+      console.error("Error deleting from local DB", e);
+      // Continue to try deleting from server if local delete fails for some reason
+    }
+
+    if (!navigator.onLine || isOffline || documentId.startsWith('temp-')) {
+      // If it was a temp- ID or offline, local deletion is enough
       toast({
-        title: "Document deleted",
-        description: "Document deleted locally"
+        title: "Document deleted locally",
+        description: "Document removed from local storage."
       });
       return true;
     }
@@ -313,195 +635,212 @@ export const useDocuments = (options?: { skipInitialFetch?: boolean }) => {
       const { error } = await supabase
         .from('documents')
         .delete()
-        .eq('id', documentId)
+        .eq('id', documentId);
 
-      if (error) throw error
-
-      setDocuments(prev => prev.filter(doc => doc.id !== documentId))
-      
-      if (currentDocument?.id === documentId) {
-        setCurrentDocument(null)
+      if (error) {
+        // If server delete fails, it means the doc might still exist on server.
+        // We've already deleted locally. User might need to manually resolve or retry.
+        // For now, we'll assume local delete is the source of truth for the UI.
+        console.error('Supabase error deleting document, but it was deleted locally:', error);
+        toast({
+          title: "Server Delete Error",
+          description: "Failed to delete document from server, but it's removed locally.",
+          variant: "default"
+        });
+        throw error; // Propagate error to indicate server operation failed
       }
 
+      console.log('Document deleted from Supabase:', documentId);
       toast({
         title: "Document deleted",
-        description: "Document deleted successfully"
-      })
-
-      return true
+        description: "Document deleted successfully from cloud and local storage."
+      });
+      return true;
     } catch (error: any) {
-      console.error('Error deleting document:', error)
+      console.error('Error deleting document from Supabase:', error);
+      // If Supabase deletion fails, the document is already removed from the local state/DB.
+      // We inform the user that it's locally deleted but server deletion failed.
       toast({
-        title: "Error",
-        description: "Failed to delete document",
+        title: "Error Deleting from Server",
+        description: "Document removed locally, but failed to delete from server. It may reappear if you fetch data on another device.",
         variant: "destructive"
-      })
-      return false
+      });
+      return false; // Indicate that the full operation (including server) was not successful
     }
   }
+
   // Load specific document
   const loadDocument = useCallback(async (documentId: string) => {
     if (!user) return null;
-    if (!navigator.onLine || isOffline || documentId.startsWith('temp-')) {
-      const doc = await getOfflineDoc(documentId);
-      if (doc) {
-        setCurrentDocument(doc);
-        return doc;
+    setIsLoading(true);
+
+    try {
+      const offlineDoc = await getOfflineDoc(documentId);
+      if (offlineDoc) {
+        // Even if loaded from offline, process its assets if online,
+        // in case some assets were added via another client and only their URLs are present.
+        // However, this might be intensive. For now, assume offlineDoc.data is already processed.
+        // If it contains http urls and we are online, it could be re-processed.
+        // Let's assume if it's from offlineDoc, its assets are either local-asset or intentionally external.
+        // For simplicity, we'll only process assets when fetching from Supabase.
+        // If an offline doc has an http link and we come online, a full fetchDocuments would process it.
+        console.log('Document loaded from IndexedDB:', documentId);
+        setCurrentDocument(offlineDoc);
+        setIsLoading(false);
+        return offlineDoc;
       }
+    } catch (error) {
+      console.warn('Could not load document from IndexedDB, will try server:', error);
+    }
+
+    if (!navigator.onLine) {
+      console.log('App is offline, cannot fetch document from server:', documentId);
+      toast({
+        title: "Offline",
+        description: "Document not found locally and you are offline.",
+        variant: "destructive"
+      });
+      setIsLoading(false);
       return null;
     }
 
     try {
-      console.log('Loading document:', documentId)
-      
-      // Add timeout to prevent hanging on network issues
+      console.log('Loading document from Supabase:', documentId);
       const timeoutPromise = new Promise((_, reject) => 
         setTimeout(() => reject(new Error('Request timeout')), 10000)
-      )
+      );
       
       const loadPromise = supabase
         .from('documents')
         .select('*')
         .eq('id', documentId)
-        .single()
+        .single();
 
-      const { data, error } = await Promise.race([loadPromise, timeoutPromise]) as any
+      const { data: dbData, error } = await Promise.race([loadPromise, timeoutPromise]) as any;
 
       if (error) {
-        console.error('Supabase error loading document:', error)
-        throw error
+        console.error('Supabase error loading document:', error);
+        throw error;
       }
 
-      
-      setCurrentDocument(data)
-      return data
+      if (dbData) {
+        let dataForProcessing: string | object | undefined = undefined;
+        if (typeof dbData.data === 'string') {
+          dataForProcessing = dbData.data;
+        } else if (typeof dbData.data === 'object' && dbData.data !== null) {
+          dataForProcessing = dbData.data;
+        } else if (dbData.data === null || dbData.data === undefined) {
+          dataForProcessing = JSON.stringify({});
+        } else {
+          console.warn(`Unexpected data type for loaded doc ${dbData.id}: ${typeof dbData.data}. Stringifying.`);
+          dataForProcessing = JSON.stringify(dbData.data);
+        }
+        const processedDataString = await processDocumentAssets(dataForProcessing, user.id, navigator.onLine);
+        const docToStore = { ...dbData, data: processedDataString, synced: true };
+        setCurrentDocument(docToStore);
+        await saveOfflineDoc(docToStore);
+        console.log('Document fetched from Supabase, assets processed, and saved to IndexedDB:', documentId);
+        setIsLoading(false);
+        return docToStore;
+      } else {
+        toast({
+          title: "Not Found",
+          description: "Document not found on the server.",
+          variant: "destructive"
+        });
+        setIsLoading(false);
+        return null;
+      }
     } catch (error: any) {
-      console.error('Error loading document:', error)
+      console.error('Error loading document:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to load document",
+        description: error.message || "Failed to load document. It might not exist or there was a network issue.",
         variant: "destructive"
-      })
-      return null
+      });
+      setCurrentDocument(null); 
+      setIsLoading(false);
+      return null;
     }
-  }, [user, isOffline])
+  }, [user, supabase, toast, getAllOfflineDocs, saveOfflineDoc, getOfflineDoc]); 
 
   // Rename document
   const renameDocument = async (id: string, newName: string) => {
     if (!user) return false;
 
-    // Don't allow empty names
     if (!newName.trim()) {
-      toast({
-        title: "Error",
-        description: "Document name cannot be empty",
-        variant: "destructive"
-      });
+      toast({ title: "Error", description: "Document name cannot be empty", variant: "destructive" });
       return false;
     }
 
-    // Find the document to update
-    const docToUpdate = documents.find(doc => doc.id === id);
+    const docToUpdate = await getOfflineDoc(id) || documents.find(doc => doc.id === id);
     if (!docToUpdate) {
       console.error('Document not found for renaming:', id);
+      toast({ title: "Error", description: "Document not found for renaming.", variant: "destructive" });
       return false;
-    }
-
-    // Create updated document
-    const updatedDoc = {
+    }    const updatedDocData = {
       ...docToUpdate,
       name: newName.trim(),
-      updated_at: new Date().toISOString(),
+      // Preserve original updated_at for renames to avoid changing "time ago" display
+      // updated_at: docToUpdate.updated_at, // Keep original timestamp for renames
     };
 
-    if (!navigator.onLine || isOffline) {
+    if (!navigator.onLine || isOffline || id.startsWith('temp-')) {
+      const offlineRenamedDoc = { ...updatedDocData, synced: false };
       try {
-        // Update the document in IndexedDB
-        await saveOfflineDoc({
-          ...updatedDoc,
-          synced: false,
-        });
-
-        // Update the document in the state
+        await saveOfflineDoc(offlineRenamedDoc);
         setDocuments(prev => prev.map(doc => 
-          doc.id === id ? { ...doc, name: newName.trim(), updated_at: new Date().toISOString() } : doc
-        ));
-
+          doc.id === id ? offlineRenamedDoc : doc
+        ).sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()));
         if (currentDocument?.id === id) {
-          setCurrentDocument({ ...currentDocument, name: newName.trim() });
+          setCurrentDocument(offlineRenamedDoc);
         }
-
-        toast({
-          title: "Document renamed",
-          description: `Renamed to "${newName}" (offline)`
-        });
-
+        toast({ title: "Document renamed locally", description: `Renamed to "${newName}"` });
         return true;
       } catch (error) {
         console.error('Error renaming document offline:', error);
-        toast({
-          title: "Error",
-          description: "Failed to rename document",
-          variant: "destructive"
-        });
+        toast({ title: "Error", description: "Failed to rename document locally.", variant: "destructive" });
         return false;
       }
-    }
-
-    try {
+    }    try {
       const { error } = await supabase
         .from('documents')
-        .update({ name: newName.trim(), updated_at: new Date().toISOString() })
+        .update({ name: newName.trim() }) // Remove updated_at from Supabase update
         .eq('id', id);
 
       if (error) throw error;
 
-      // Update documents state
+      const syncedRenamedDoc = { ...updatedDocData, name: newName.trim(), synced: true };
+      await saveOfflineDoc(syncedRenamedDoc);
+
       setDocuments(prev => prev.map(doc => 
-        doc.id === id ? { ...doc, name: newName.trim(), updated_at: new Date().toISOString(), synced: true } : doc
-      ));
+        doc.id === id ? syncedRenamedDoc : doc
+      ).sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()));
 
-      // Update current document if it's the one being renamed
       if (currentDocument?.id === id) {
-        setCurrentDocument({ ...currentDocument, name: newName.trim(), synced: true });
+        setCurrentDocument(syncedRenamedDoc);
       }
-
-      toast({
-        title: "Document renamed",
-        description: `Renamed to "${newName}"`
-      });
-
+      toast({ title: "Document renamed", description: `Renamed to "${newName}"` });
       return true;
     } catch (error: any) {
-      console.error('Error renaming document:', error);
-      
-      // Try to save the rename offline
+      console.error('Error renaming document on Supabase, saving locally:', error);
+      const fallbackRenamedDoc = { ...updatedDocData, name: newName.trim(), synced: false };
       try {
-        await saveOfflineDoc({
-          ...updatedDoc,
-          synced: false,
-        });
-
+        await saveOfflineDoc(fallbackRenamedDoc);
         setDocuments(prev => prev.map(doc => 
-          doc.id === id ? { ...doc, name: newName.trim(), updated_at: new Date().toISOString(), synced: false } : doc
-        ));
-
+          doc.id === id ? fallbackRenamedDoc : doc
+        ).sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()));
         if (currentDocument?.id === id) {
-          setCurrentDocument({ ...currentDocument, name: newName.trim(), synced: false });
+          setCurrentDocument(fallbackRenamedDoc);
         }
-
         toast({
-          title: "Document renamed locally",
-          description: "Changes will sync when you're back online"
+          title: "Renamed Locally",
+          description: `Changes for "${newName}" saved locally. Will sync when online.`,
+          variant: "default"
         });
-
         return true;
       } catch (offlineError) {
-        toast({
-          title: "Error",
-          description: "Failed to rename document",
-          variant: "destructive"
-        });
+        toast({ title: "Error", description: "Failed to rename document on server or locally.", variant: "destructive" });
         return false;
       }
     }
@@ -522,6 +861,7 @@ export const useDocuments = (options?: { skipInitialFetch?: boolean }) => {
     documents,
     currentDocument,
     isLoading,
+    isOffline, // Added isOffline here
     createDocument,
     updateDocument,
     deleteDocument,

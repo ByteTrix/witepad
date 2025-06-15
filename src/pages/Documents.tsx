@@ -13,7 +13,16 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 
 const Documents = () => {
   const { user } = useAuth()
-  const { documents, isLoading, createDocument, deleteDocument, fetchDocuments, renameDocument } = useDocuments()
+  const { 
+    documents, 
+    isLoading: isLoadingDocuments, // Renamed to avoid conflict if another isLoading is used
+    createDocument, 
+    deleteDocument, 
+    fetchDocuments, 
+    renameDocument,
+    // isOffline isn't provided by the hook - use our own state instead
+  } = useDocuments()
+  const [isOffline, setIsOffline] = useState(!navigator.onLine)
   const navigate = useNavigate()
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [isCreating, setIsCreating] = useState(false)
@@ -29,6 +38,20 @@ const Documents = () => {
       navigate('/')
     }
   }, [user, navigate])
+  
+  // Track online/offline status
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false)
+    const handleOffline = () => setIsOffline(true)
+    
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+    
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
+  }, [])
   
   // Focus input when renaming starts
   useEffect(() => {
@@ -155,6 +178,12 @@ const Documents = () => {
   
   if (!user) return null
   
+  // Determine overall sync status
+  const allDocsSynced = documents.every(doc => doc.synced !== false);
+  // A more nuanced isSyncing could be if !isOffline && !allDocsSynced && someActivityIsHappening
+  // For now, we'll rely on isOffline and allDocsSynced.
+  // If useDocuments exposes a dedicated isSyncing state, that would be more accurate.
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background/90 to-muted/30 relative overflow-hidden">
       {/* Animated background elements */}
@@ -171,8 +200,9 @@ const Documents = () => {
               My Documents
             </h1>
             <SyncStatus 
-              isSynced={navigator.onLine && documents.every(doc => doc.synced !== false)}
-              isLocalOnly={!navigator.onLine}
+              isOffline={isOffline} // Pass isOffline state
+              isSynced={!isOffline && allDocsSynced}
+              // isSyncing could be a new state from useDocuments, e.g., when online sync is in progress
               className="bg-background/80 backdrop-blur-sm border border-muted/40 shadow-lg"
             />
           </div>
@@ -224,7 +254,7 @@ const Documents = () => {
                 variant="ghost" 
                 size="icon" 
                 onClick={handleRefresh}
-                disabled={isRefreshing || isLoading}
+                disabled={isRefreshing || isLoadingDocuments}
                 className={`bg-gradient-to-r from-background/80 to-background/60 backdrop-blur-md border border-muted/40 hover:border-primary/30 hover:bg-primary/5 transition-all duration-300 shadow-lg hover:shadow-xl ${isRefreshing ? 'animate-spin' : 'hover:scale-105'}`}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -237,20 +267,16 @@ const Documents = () => {
             </div>
           </div>
 
-          {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in-0 duration-500">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="border border-muted/40 rounded-xl p-6 space-y-4 bg-gradient-to-br from-background/80 to-muted/20 backdrop-blur-sm shadow-lg animate-pulse">
-                  <Skeleton className="h-6 w-3/4 bg-gradient-to-r from-muted/50 to-muted/30" />
-                  <Skeleton className="h-4 w-1/2 bg-gradient-to-r from-muted/50 to-muted/30" />
-                  <div className="pt-4">
-                    <Skeleton className="h-10 w-full bg-gradient-to-r from-muted/50 to-muted/30" />
-                  </div>
-                </div>
+          {isLoadingDocuments && documents.length === 0 && ( // Show skeleton only on initial load and if no docs yet
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in-0 duration-700 delay-200">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-48 rounded-xl bg-background/70 backdrop-blur-md shadow-lg hover:shadow-xl transition-all duration-300" />
               ))}
             </div>
-          ) : filteredAndSortedDocuments.length === 0 ? (
-            <div className="text-center py-16 space-y-4 animate-in fade-in-0 slide-in-from-bottom-4 duration-700">
+          )}
+
+          {!isLoadingDocuments && documents.length === 0 ? (
+            <div className="text-center py-12 animate-in fade-in-0 duration-700 delay-200">
               {searchQuery ? (
                 <>
                   <div className="w-16 h-16 mx-auto bg-gradient-to-br from-muted/80 to-muted/40 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm">
@@ -280,37 +306,58 @@ const Documents = () => {
                 </>
               )}
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredAndSortedDocuments.map((doc: Document, index) => (
-                <div
-                  key={doc.id}
-                  onClick={() => handleOpenDocument(doc.id)}
-                  className="border border-muted/30 rounded-xl p-6 hover:shadow-2xl hover:shadow-primary/20 transition-all duration-500 cursor-pointer group space-y-2 relative bg-gradient-to-br from-background/90 via-background/80 to-muted/10 backdrop-blur-sm hover:scale-[1.02] hover:border-primary/40 animate-in fade-in-0 slide-in-from-bottom-4 hover:bg-gradient-to-br hover:from-background/95 hover:via-background/90 hover:to-primary/5"
-                  style={{
-                    animationDelay: `${index * 100}ms`,
-                    animationDuration: '700ms'
-                  }}
-                >
-                  {/* Gradient overlay on hover */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-xl pointer-events-none" />
+          ) : null}
+          
+          {filteredAndSortedDocuments.length > 0 && (            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in-0 duration-700 delay-200">
+              {filteredAndSortedDocuments.map((doc, index) => (
+                <div 
+                  key={doc.id} 
+                  className="relative group"
+                  style={{ animationDelay: `${index * 100}ms`, animationDuration: '700ms' }}
+                >                  {/* External gradient shadow effect */}
+                   <div className="absolute -inset-1 bg-gradient-to-br from-primary/20 via-primary/10 to-accent/15 rounded-xl blur-md opacity-0 group-hover:opacity-100 transition-all duration-500 -z-10" />
+                    <div 
+                    onClick={() => renamingId !== doc.id && handleOpenDocument(doc.id)}
+                    className={`p-6 rounded-xl shadow-lg hover:shadow-2xl hover:shadow-primary/20 transition-all duration-500 cursor-pointer relative overflow-hidden
+                                bg-gradient-to-br from-card/95 via-card/90 to-card/85 backdrop-blur-lg 
+                                border border-border/60 hover:border-primary/60 
+                                hover:bg-gradient-to-br hover:from-card hover:via-card/95 hover:to-primary/5
+                                hover:scale-[1.02] hover:-translate-y-1 transform-gpu
+                                animate-in fade-in-0 slide-in-from-bottom-4
+                                ${deletingId === doc.id ? 'opacity-50 animate-pulse scale-95' : ''}
+                                ${doc.synced === false && !isOffline ? 'border-yellow-500/60 shadow-yellow-500/20 bg-gradient-to-br from-yellow-50/50 via-card/90 to-card/85' : ''}
+                                ${doc.synced === false && isOffline ? 'border-blue-500/60 shadow-blue-500/20 bg-gradient-to-br from-blue-50/50 via-card/90 to-card/85' : ''}
+                                `}
+                                >
+                    {/* Shimmer effect - keeping this inside for surface effect */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out rounded-xl pointer-events-none" />
+                    
+                    {/* Sync status indicators */}
+                  <div className="absolute -top-2 -right-2 p-1 opacity-0 group-hover:opacity-100 transition-all duration-300 z-20 transform group-hover:scale-110">
+                    {!doc.synced && !isOffline && (
+                      <div title="Sync pending" className="w-3 h-3 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-full animate-pulse shadow-lg shadow-yellow-500/50"></div>
+                    )}
+                    {!doc.synced && isOffline && (
+                      <div title="Saved locally" className="w-3 h-3 bg-gradient-to-r from-blue-400 to-blue-500 rounded-full shadow-lg shadow-blue-500/50"></div>
+                    )}
+                  </div>
                   
-                  <div className="flex items-start justify-between relative z-10">
+                  <div className="flex items-start justify-between mb-4 relative z-10">
                     {renamingId === doc.id ? (
-                      <div className="flex items-center w-full space-x-2" onClick={(e) => e.stopPropagation()}>
-                        <Input 
+                      <div className="flex items-center w-full space-x-2" onClick={(e) => e.stopPropagation()}>                        <Input 
                           ref={inputRef}
                           value={newName} 
                           onChange={(e) => setNewName(e.target.value)}
                           onKeyDown={(e) => handleRenameKeyDown(doc.id, e)}
-                          className="h-8 text-lg font-medium bg-gradient-to-r from-background/80 to-background/60 backdrop-blur-sm border-muted/40 focus:border-primary/50 transition-all duration-300 shadow-lg"
+                          className="h-8 text-lg font-medium bg-card border-border focus:border-primary transition-all duration-300 shadow-lg focus:shadow-xl focus:shadow-primary/20"
                           placeholder="Document name"
                         />
                         <div className="flex space-x-1">
                           <Button 
                             size="icon" 
                             variant="ghost" 
-                            className="h-8 w-8 hover:bg-green-500/20 hover:text-green-600 transition-all duration-300 shadow-lg hover:scale-110"
+                            className="h-8 w-8 hover:bg-gradient-to-r hover:from-green-500/20 hover:to-green-400/20 hover:text-green-600 transition-all duration-300 shadow-lg hover:scale-110 hover:shadow-xl hover:shadow-green-500/20"
                             onClick={(e) => handleSubmitRename(doc.id, e)}
                           >
                             <Check className="h-4 w-4" />
@@ -318,36 +365,45 @@ const Documents = () => {
                           <Button 
                             size="icon" 
                             variant="ghost" 
-                            className="h-8 w-8 hover:bg-red-500/20 hover:text-red-600 transition-all duration-300 shadow-lg hover:scale-110"
+                            className="h-8 w-8 hover:bg-gradient-to-r hover:from-red-500/20 hover:to-red-400/20 hover:text-red-600 transition-all duration-300 shadow-lg hover:scale-110 hover:shadow-xl hover:shadow-red-500/20"
                             onClick={handleCancelRename}
                           >
                             <X className="h-4 w-4" />
                           </Button>
                         </div>
                       </div>
-                    ) : (
-                      <h3 className="text-lg font-medium truncate group-hover:text-primary transition-all duration-300 flex-1 bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent group-hover:from-primary group-hover:to-primary/80">
+                    ) : (                      <h3 className="text-lg font-semibold truncate group-hover:text-primary transition-all duration-300 flex-1 text-card-foreground group-hover:drop-shadow-sm">
                         {doc.name}
                       </h3>
                     )}
-                    {doc.id.startsWith('temp-') && (
-                      <span className="text-xs px-2 py-1 bg-gradient-to-r from-yellow-400/30 to-yellow-500/30 text-yellow-600 rounded-full border border-yellow-400/40 backdrop-blur-sm shadow-lg">Offline</span>
-                    )}
-                    {!doc.synced && !doc.id.startsWith('temp-') && (
-                      <span className="text-xs px-2 py-1 bg-gradient-to-r from-blue-400/30 to-blue-500/30 text-blue-600 rounded-full border border-blue-400/40 backdrop-blur-sm ml-2 shadow-lg">Not synced</span>
-                    )}
+                    
+                    {/* Status badges with improved styling */}
+                    <div className="flex items-center gap-2">
+                      {doc.id.startsWith('temp-') && (
+                        <span className="text-xs px-3 py-1.5 bg-gradient-to-r from-yellow-400/40 to-yellow-500/40 text-yellow-700 rounded-full border border-yellow-400/50 backdrop-blur-sm shadow-lg hover:shadow-yellow-500/30 transition-all duration-300 hover:scale-105">
+                          Offline
+                        </span>
+                      )}
+                      {!doc.synced && !doc.id.startsWith('temp-') && (
+                        <span className="text-xs px-3 py-1.5 bg-gradient-to-r from-blue-400/40 to-blue-500/40 text-blue-700 rounded-full border border-blue-400/50 backdrop-blur-sm shadow-lg hover:shadow-blue-500/30 transition-all duration-300 hover:scale-105">
+                          Not synced
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <p className="text-sm text-muted-foreground flex items-center group-hover:text-muted-foreground/80 transition-colors duration-300 relative z-10">
-                    <Calendar className="h-3.5 w-3.5 mr-2 opacity-70" />
+                  
+                  <p className="text-sm text-muted-foreground flex items-center group-hover:text-muted-foreground/70 transition-colors duration-300 relative z-10 mb-4">
+                    <Calendar className="h-4 w-4 mr-2 opacity-70 group-hover:opacity-90 transition-opacity duration-300" />
                     {formatDistanceToNow(new Date(doc.updated_at), { addSuffix: true })}
                   </p>
-                  <div className="pt-4 flex justify-end space-x-2 relative z-10">
-                    {!renamingId && (
-                      <Button
+                  
+                  {/* Action buttons with improved hover effects */}
+                  <div className="flex justify-end space-x-2 relative z-10">
+                    {!renamingId && (                      <Button
                         variant="outline"
                         size="sm"
                         onClick={(e) => handleStartRename(doc, e)}
-                        className="opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-105 bg-gradient-to-r from-background/80 to-background/60 backdrop-blur-sm border-muted/40 hover:border-primary/30 hover:bg-primary/5 shadow-lg hover:shadow-xl"
+                        className="opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110 bg-card border-border hover:border-primary hover:bg-primary/10 shadow-lg hover:shadow-xl hover:shadow-primary/20 transform-gpu"
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -357,15 +413,16 @@ const Documents = () => {
                       size="sm"
                       onClick={(e) => handleDeleteDocument(doc.id, e)}
                       disabled={deletingId === doc.id}
-                      className="opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-105 bg-gradient-to-r from-red-500/80 to-red-600/80 hover:from-red-500 hover:to-red-600 shadow-lg hover:shadow-xl border-0"
+                      className="opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110 bg-gradient-to-r from-red-500/80 to-red-600/80 hover:from-red-500 hover:to-red-600 shadow-lg hover:shadow-xl hover:shadow-red-500/30 border-0 transform-gpu"
                     >
                       {deletingId === doc.id ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
                         <Trash2 className="h-4 w-4" />
-                      )}
-                    </Button>
+                      )}                    
+                      </Button>
                   </div>
+                </div>
                 </div>
               ))}
             </div>
