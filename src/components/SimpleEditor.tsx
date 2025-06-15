@@ -209,6 +209,12 @@ export const SimpleEditor = ({ documentId, isPublicRoom = false }: SimpleEditorP
   const { updateDocument, loadDocument, currentDocument, renameDocument } = useDocuments({ skipInitialFetch: true })
   const { user } = useAuth()
   
+  useEffect(() => {
+    if (documentId) {
+      loadDocument(documentId)
+    }
+  }, [documentId, loadDocument])
+
   // Create user preferences with custom user data
   const [userPreferences, setUserPreferences] = useState<TLUserPreferences>(() => {
     if (isPublicRoom && !user) {
